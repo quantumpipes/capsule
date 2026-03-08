@@ -4,15 +4,35 @@ Tests for hash chain management.
 Tests chain integrity and verification.
 """
 
+import json
 import tempfile
 from pathlib import Path
 
 import pytest
+from sqlalchemy import select
 
 from qp_capsule.capsule import Capsule, TriggerSection
 from qp_capsule.chain import CapsuleChain
 from qp_capsule.seal import Seal
-from qp_capsule.storage import CapsuleStorage
+from qp_capsule.storage import CapsuleModel, CapsuleStorage
+
+
+async def _tamper_stored_capsule(
+    storage: CapsuleStorage, sequence: int, field: str, value: str
+) -> None:
+    """Tamper with a capsule's serialized data in the database without updating its hash."""
+    await storage._ensure_db()
+    factory = storage._get_session_factory()
+    async with factory() as session:
+        result = await session.execute(
+            select(CapsuleModel).where(CapsuleModel.sequence == sequence)
+        )
+        model = result.scalar_one()
+        data = json.loads(model.data)
+        section, key = field.split(".", 1)
+        data[section][key] = value
+        model.data = json.dumps(data)
+        await session.commit()
 
 
 @pytest.fixture
@@ -210,8 +230,7 @@ class TestChainCryptographicVerification:
         seal.seal(capsule)
         await storage.store(capsule)
 
-        stored = (await storage.get_all_ordered())[0]
-        stored.trigger.request = "tampered"
+        await _tamper_stored_capsule(storage, sequence=0, field="trigger.request", value="tampered")
 
         result = await chain.verify(verify_content=True)
 
@@ -254,8 +273,7 @@ class TestChainCryptographicVerification:
         seal.seal(capsule)
         await storage.store(capsule)
 
-        stored = (await storage.get_all_ordered())[0]
-        stored.trigger.request = "tampered"
+        await _tamper_stored_capsule(storage, sequence=0, field="trigger.request", value="tampered")
 
         result = await chain.verify()
 
@@ -272,8 +290,7 @@ class TestChainCryptographicVerification:
         seal.seal(capsule)
         await storage.store(capsule)
 
-        stored = (await storage.get_all_ordered())[0]
-        stored.trigger.request = "tampered"
+        await _tamper_stored_capsule(storage, sequence=0, field="trigger.request", value="tampered")
 
         result = await chain.verify(seal=seal)
 
@@ -310,8 +327,7 @@ class TestChainCryptographicVerification:
             seal.seal(capsule)
             await storage.store(capsule)
 
-        all_capsules = await storage.get_all_ordered()
-        all_capsules[2].trigger.request = "tampered_middle"
+        await _tamper_stored_capsule(storage, sequence=2, field="trigger.request", value="tampered_middle")
 
         result = await chain.verify(verify_content=True)
 
@@ -346,7 +362,7 @@ class TestChainCryptographicVerification:
 
         all_capsules = await storage.get_all_ordered()
         tampered_id = str(all_capsules[1].id)
-        all_capsules[1].trigger.request = "tampered"
+        await _tamper_stored_capsule(storage, sequence=1, field="trigger.request", value="tampered")
 
         result = await chain.verify(verify_content=True)
 
@@ -361,8 +377,7 @@ class TestChainCryptographicVerification:
         seal.seal(capsule)
         await storage.store(capsule)
 
-        stored = (await storage.get_all_ordered())[0]
-        stored.trigger.request = "tampered"
+        await _tamper_stored_capsule(storage, sequence=0, field="trigger.request", value="tampered")
 
         result = await chain.verify(verify_content=False)
 
