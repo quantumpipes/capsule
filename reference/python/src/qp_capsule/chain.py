@@ -23,6 +23,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from qp_capsule.seal import compute_hash
+
 if TYPE_CHECKING:
     from qp_capsule.capsule import Capsule
     from qp_capsule.protocol import CapsuleStorageProtocol
@@ -88,21 +90,36 @@ class CapsuleChain:
 
         return capsule
 
-    async def verify(self, tenant_id: str | None = None) -> ChainVerificationResult:
+    async def verify(
+        self,
+        tenant_id: str | None = None,
+        *,
+        verify_content: bool = False,
+        seal: Seal | None = None,
+    ) -> ChainVerificationResult:
         """
         Verify the entire chain integrity.
 
-        Checks:
+        Structural checks (always):
             1. Sequence numbers are consecutive (0, 1, 2, ...)
             2. Each Capsule's previous_hash matches the previous Capsule's hash
             3. First Capsule has previous_hash = None
 
+        Cryptographic checks (when verify_content=True or seal is provided):
+            4. Recompute SHA3-256 from content and compare to stored hash
+            5. Verify Ed25519 signature (requires seal)
+
         Args:
             tenant_id: If provided, verify only this tenant's chain
+            verify_content: If True, recompute hashes from content
+            seal: If provided, also verify Ed25519 signatures (implies verify_content)
 
         Returns:
             ChainVerificationResult with validity and error details
         """
+        if seal is not None:
+            verify_content = True
+
         capsules = await self.storage.get_all_ordered(tenant_id=tenant_id)
 
         if not capsules:
@@ -120,7 +137,6 @@ class CapsuleChain:
 
             # Check previous_hash
             if i == 0:
-                # First Capsule should have no previous
                 if capsule.previous_hash is not None:
                     return ChainVerificationResult(
                         valid=False,
@@ -129,7 +145,6 @@ class CapsuleChain:
                         capsules_verified=0,
                     )
             else:
-                # Subsequent Capsules should link to previous
                 expected_prev = capsules[i - 1].hash
                 if capsule.previous_hash != expected_prev:
                     return ChainVerificationResult(
@@ -138,6 +153,24 @@ class CapsuleChain:
                         broken_at=str(capsule.id),
                         capsules_verified=i,
                     )
+
+            if verify_content:
+                computed = compute_hash(capsule.to_dict())
+                if computed != capsule.hash:
+                    return ChainVerificationResult(
+                        valid=False,
+                        error=f"Content hash mismatch at sequence {i}",
+                        broken_at=str(capsule.id),
+                        capsules_verified=i,
+                    )
+
+            if seal is not None and not seal.verify(capsule):
+                return ChainVerificationResult(
+                    valid=False,
+                    error=f"Signature verification failed at sequence {i}",
+                    broken_at=str(capsule.id),
+                    capsules_verified=i,
+                )
 
         return ChainVerificationResult(
             valid=True,

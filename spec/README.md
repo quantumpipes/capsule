@@ -329,7 +329,69 @@ For a conformant implementation in any language:
 
 ---
 
-## 7. URI Scheme
+## 7. Security Considerations
+
+### 7.1 What CPS Provides
+
+| Property | Mechanism | Strength |
+|---|---|---|
+| **Integrity** | SHA3-256 content hash | Any modification changes the hash |
+| **Authenticity** | Ed25519 signature | Proves which key signed the record |
+| **Non-repudiation** | Signature + `signed_by` fingerprint | Third-party verification via `verify_with_key()` |
+| **Temporal ordering** | Hash chain (`previous_hash` + `sequence`) | Insertion, deletion, and reordering are detectable |
+| **Quantum resistance** | Optional ML-DSA-65 dual signature | FIPS 204, additive to Ed25519 |
+
+### 7.2 What CPS Does Not Provide
+
+| Property | Reason |
+|---|---|
+| **Confidentiality** | Capsule content is plaintext JSON. The protocol provides integrity, not encryption. Field-level encryption is a deployment concern. |
+| **Content truthfulness** | The seal proves a record has not been modified after creation. It does not prove the content was accurate when created. A compromised or misaligned agent can record fabricated reasoning that passes all cryptographic checks. |
+| **Availability** | The protocol cannot force an application to create Capsules. If the runtime is compromised, it may skip record creation entirely. The chain shows no gap because the record was never created. |
+| **Identity binding** | `signed_by` contains a key fingerprint, not an identity. The protocol does not bind keys to agents, organizations, or runtimes. Whoever holds the private key IS the signer. |
+
+### 7.3 Signer Key Compromise
+
+If an attacker obtains the Ed25519 private key, they can forge Capsules that are indistinguishable from legitimate ones. Past Capsules remain valid. Mitigations:
+
+- Restrict key file permissions (reference implementation uses `0600` with `umask(0o077)`)
+- Use HSM-bound keys in production to prevent extraction
+- Rotate keys periodically; use `verify_with_key()` for old keys
+- Enable ML-DSA-65 dual signatures so both algorithms must be compromised
+
+The protocol does not include key revocation or expiration. These are deployment-layer concerns.
+
+### 7.4 Chain Truncation
+
+If an attacker deletes the last N records from storage, the truncated chain still verifies as valid from genesis to the truncation point. The protocol has no "expected chain length" anchor. Mitigations:
+
+- Monitor chain length externally (compare expected vs. actual)
+- Periodically checkpoint chain head hashes to an independent system
+- Use append-only storage (e.g., S3 Object Lock, WORM storage)
+
+### 7.5 Chain Verification Levels
+
+Chain verification has two levels. Implementations SHOULD support both:
+
+1. **Structural verification** (fast): Check sequence numbers and `previous_hash` linkage. This trusts stored hash values without recomputing them.
+2. **Cryptographic verification** (thorough): Recompute SHA3-256 from content for each record and optionally verify Ed25519 signatures. This detects storage-level content tampering.
+
+Structural verification alone does not detect an attacker who modifies both content and the stored hash. Cryptographic verification catches this because the signature will not match the recomputed hash (unless the signing key is also compromised).
+
+### 7.6 Replay
+
+A sealed Capsule is valid regardless of where it is stored. An attacker who copies a valid chain to a different storage backend creates a valid chain. The protocol does not bind chains to storage locations. Mitigations:
+
+- Use `tenant_id` scoping to isolate chains
+- Verify chain provenance via external metadata (storage origin, deployment context)
+
+### 7.7 Timestamp Trust
+
+`trigger.timestamp` and `signed_at` are set by the creating application, not by a trusted time source. An application could backdate or future-date timestamps. The hash chain provides relative ordering (Capsule N was sealed after Capsule N-1), but absolute timestamps are only as trustworthy as the runtime clock.
+
+---
+
+## 8. URI Scheme
 
 Capsules are content-addressable via the `capsule://` URI scheme. Every sealed Capsule can be referenced by its SHA3-256 hash:
 

@@ -248,11 +248,20 @@ Capsule #0          Capsule #1          Capsule #2
 
 ### Chain Verification
 
-`chain.verify()` walks every Capsule in sequence order and checks:
+`chain.verify()` supports two verification levels:
+
+**Structural** (default, fast): walks every Capsule in sequence order and checks:
 
 1. Sequence numbers are consecutive: 0, 1, 2, ...
 2. Each Capsule's `previous_hash` matches the previous Capsule's `hash`
 3. The genesis Capsule (sequence 0) has `previous_hash = None`
+
+**Cryptographic** (`verify_content=True`): everything above, plus:
+
+4. Recomputes SHA3-256 from content and compares to stored hash
+5. Optionally verifies Ed25519 signatures (when `seal=` is provided)
+
+Structural verification trusts stored hash values. Cryptographic verification catches storage-level tampering where an attacker modifies content without the signing key. See [CPS Section 7.5](../spec/README.md) for the security rationale.
 
 If any check fails, the result includes the Capsule ID where the chain broke and the number of Capsules verified before the break.
 

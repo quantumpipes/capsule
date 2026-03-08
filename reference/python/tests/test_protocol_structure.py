@@ -99,6 +99,36 @@ class TestSpecDirectory:
         assert "previous_hash" in text
         assert "sequence" in text
 
+    def test_spec_has_security_considerations(self):
+        """CPS spec must include a Security Considerations section."""
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Security Considerations" in text
+
+    def test_spec_security_covers_key_compromise(self):
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Key Compromise" in text or "Signer Key Compromise" in text
+
+    def test_spec_security_covers_chain_truncation(self):
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Chain Truncation" in text
+
+    def test_spec_security_covers_verification_levels(self):
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Verification Levels" in text or "verify_content" in text
+
+    def test_spec_security_documents_non_goals(self):
+        """Spec must be explicit about what CPS does NOT provide."""
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Does Not Provide" in text
+
+    def test_spec_security_covers_timestamp_trust(self):
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Timestamp" in text and "trust" in text.lower()
+
+    def test_spec_security_covers_replay(self):
+        text = (REPO_ROOT / "spec" / "README.md").read_text()
+        assert "Replay" in text
+
     def test_uri_scheme_defines_capsule_protocol(self):
         text = (REPO_ROOT / "spec" / "uri-scheme.md").read_text()
         assert "capsule://" in text
