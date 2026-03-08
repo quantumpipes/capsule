@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1772935097547" clover="3.2.0">
-  <project timestamp="1772935097547" name="All files">
+<coverage generated="1772936560879" clover="3.2.0">
+  <project timestamp="1772936560879" name="All files">
     <metrics statements="91" coveredstatements="91" conditionals="49" coveredconditionals="49" methods="24" coveredmethods="24" elements="164" coveredelements="164" complexity="0" loc="91" ncloc="91" packages="1" files="5" classes="5"/>
     <file name="canonical.ts" path="/Users/bradleygauthier/sitecast/synova/repos/capsule/reference/typescript/src/canonical.ts">
       <metrics statements="32" coveredstatements="32" conditionals="29" coveredconditionals="29" methods="7" coveredmethods="7"/>

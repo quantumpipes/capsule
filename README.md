@@ -2,7 +2,7 @@
 
 # Capsule Protocol
 
-**The cryptographically signed memory layer for agentic AI.**
+**The cryptographically signed memory layer for autonomous AI.**
 
 Every AI action produces a Capsule — a tamper-evident, content-addressable record of what happened, why it happened, who approved it, and what the outcome was. Sealed with SHA3-256 and Ed25519. Chained for temporal integrity. Verifiable in any language.
 
@@ -10,6 +10,7 @@ Every AI action produces a Capsule — a tamper-evident, content-addressable rec
 [![CPS](https://img.shields.io/badge/CPS-v1.0-orange.svg)](./spec/)
 [![Conformance](https://img.shields.io/badge/Conformance-15_vectors-brightgreen.svg)](./conformance/)
 [![FIPS](https://img.shields.io/badge/Crypto-FIPS_202%20·%20186--5%20·%20204-purple.svg)](#cryptographic-seal)
+[![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg)](./reference/python/)
 
 </div>
 
