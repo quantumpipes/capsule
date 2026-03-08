@@ -1,0 +1,31 @@
+RE: Docket NIST-2025-0035 | Document 2026-00206
+
+When an AI agent makes a consequential decision, whether approving a transaction, modifying infrastructure, or recommending a clinical intervention, no standard defines what evidence must exist afterward. Organizations reconstruct what happened from fragments. The record of why the AI decided to act typically does not exist at all.
+
+This submission proposes that NIST define a minimum required structure for AI agent decision records. To demonstrate that such a standard is feasible and implementable, we contribute the Capsule Protocol Specification (CPS): an open protocol for structured, cryptographically sealed records of AI agent actions.
+
+What makes CPS different from better logging:
+
+- Six mandatory sections capture not just what happened, but why the AI decided to act, who authorized it, and what the outcome was
+- Reasoning is recorded before execution begins as contemporaneous evidence, not post-hoc reconstruction
+- Every record is sealed with SHA3-256 and Ed25519 at the moment of action, with optional ML-DSA-65 post-quantum dual signature
+- Records are linked in a hash chain; tamper with any record and every subsequent record invalidates
+- 15 golden test vectors enforce cross-implementation conformance at the byte level
+
+CPS is not a product. It is a protocol specification: storage-agnostic, vendor-neutral, and independent of any AI framework. It is Apache-2.0 licensed with perpetual, royalty-free patent grants, including for government systems and federally-funded research.
+
+Two reference implementations (Python and TypeScript) pass all conformance vectors with 100% test coverage. The protocol is verifiable today: https://github.com/quantumpipes/capsule
+
+We do not claim CPS addresses all of AI agent security. It addresses one foundational layer: if autonomous systems are allowed to act, there must be a durable, independently verifiable record of what they did and why. We offer CPS as a concrete starting point for that standard, and welcome NIST's guidance on how to strengthen it.
+
+Attachments:
+1. Full RFI response (questions 1a, 1d, 2a, 2e, 3a, 3b, 4a, 4b, 4d, 5a, 5b)
+2. CPS v1.0 protocol specification
+3. 15 golden test vectors for cross-implementation conformance
+
+Bradley Gauthier
+Founder, CEO, & Engineer at Quantum Pipes Technologies, LLC
+
+capsule@quantumpipes.com
+https://quantumpipes.com/capsule
+https://github.com/quantumpipes/capsule
