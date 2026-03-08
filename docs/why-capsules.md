@@ -37,7 +37,7 @@ An attacker who compromises the storage system cannot silently alter the audit t
 
 ### 3. Language-Agnostic Protocol
 
-The Capsule Protocol Specification defines byte-level serialization rules with 15 golden test vectors. A Capsule sealed in Python can be verified in TypeScript, Go, or Rust. This means:
+The Capsule Protocol Specification defines byte-level serialization rules with 16 golden test vectors. A Capsule sealed in Python can be verified in TypeScript, Go, or Rust. This means:
 
 - The audit trail is not locked to a single technology stack
 - Verification can happen independently of the system that created the record
@@ -68,7 +68,7 @@ Every Capsule is addressable by its SHA3-256 hash via the `capsule://` URI schem
 | Tamper evidence | None | None | SHA3-256 + Ed25519 |
 | Pre-execution reasoning | Rarely captured | Application-dependent | Mandatory (Section 3) |
 | Chain integrity | None | None | Hash chain |
-| Cross-language verification | N/A | N/A | 15 golden test vectors |
+| Cross-language verification | N/A | N/A | 16 golden test vectors |
 | Content addressable | No | By primary key | By SHA3-256 hash (`capsule://`) |
 | Regulatory mapping | Manual | Manual | Built-in (NIST, EU AI Act, SOC 2) |
 

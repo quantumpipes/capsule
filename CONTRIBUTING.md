@@ -46,7 +46,7 @@ We welcome reference implementations in new languages. To add one:
 
 1. Open a [new implementation issue](https://github.com/quantumpipes/capsule/issues/new?template=new-implementation.md)
 2. Create `reference/<language>/` with the implementation
-3. The implementation must pass all 15 golden test vectors in `conformance/fixtures.json`
+3. The implementation must pass all 16 golden test vectors in `conformance/fixtures.json`
 4. Include a README with installation, quickstart, and API overview
 
 A conformant implementation must provide:

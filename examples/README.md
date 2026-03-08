@@ -45,5 +45,5 @@ print(json.dumps(capsule.to_dict(), indent=2))
 ## Related
 
 - [CPS Specification](../spec/) — Protocol rules and golden test vectors
-- [Conformance Suite](../conformance/) — 15 golden test vectors
+- [Conformance Suite](../conformance/) — 16 golden test vectors
 - [Python Reference](../reference/python/) — Python quickstart and API reference

@@ -320,7 +320,7 @@ Capsule makes **zero network calls** at runtime. All cryptographic operations us
 | Seal + verification | 20 | Ed25519 seal/verify, key management, tampering |
 | Chain integrity | 20 | Hash linking, sequence, genesis, tenant chains |
 | Canonical form | 22 | CPS Section 2 serialization rules |
-| Golden fixtures | 45 | 15 cross-language conformance vectors |
+| Golden fixtures | 45 | 16 cross-language conformance vectors |
 | Session tracking | 13 | Session isolation, privacy |
 | PostgreSQL tenant | 21 | Multi-tenant storage isolation |
 | Dual signature | 24 | Ed25519 + ML-DSA-65, PQ enable/disable |
@@ -374,7 +374,7 @@ For CISOs and security teams evaluating Capsule for organizational adoption:
 | 14 | 100% test coverage | Yes | 675/675 statements, enforced in CI |
 | 15 | Zero warning tolerance | Yes | `filterwarnings = ["error"]`, 0 exemptions |
 | 16 | Invariant-based testing | Yes | 75 property tests beyond line coverage |
-| 17 | Cross-language conformance vectors | Yes | 15 golden test fixtures |
+| 17 | Cross-language conformance vectors | Yes | 16 golden test fixtures |
 | 18 | Open source with patent grant | Yes | Apache 2.0 + additional patent grant |
 | 19 | Static analysis clean | Yes | Bandit: 0 findings across 1,684 lines |
 | 20 | Dependency vulnerabilities | None | pip-audit: 0 CVEs in runtime dependencies |

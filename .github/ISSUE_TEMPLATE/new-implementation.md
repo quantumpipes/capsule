@@ -23,7 +23,7 @@ Link to the repository (or note if it will be a PR to this repo).
 - [ ] `seal()` — hash + Ed25519 signature
 - [ ] `verify()` — recompute hash and verify signature
 - [ ] `from_dict()` — deserialize from dictionary/map
-- [ ] Pass all 15 golden test vectors from `conformance/fixtures.json`
+- [ ] Pass all 16 golden test vectors from `conformance/fixtures.json`
 - [ ] Chain verification (sequence + hash linkage)
 
 ## Crypto Libraries Used

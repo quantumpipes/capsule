@@ -1,0 +1,225 @@
+{
+  "version": "1.0",
+  "specification": "Capsule URI Scheme v1.0",
+  "description": "Conformance vectors for capsule:// URI parsing. Each fixture contains a URI string and the expected parse result. A conformant URI parser must produce the same structured output for every valid fixture and reject every invalid fixture.",
+  "valid": [
+    {
+      "name": "hash_reference",
+      "description": "Bare SHA3-256 hash reference (most portable form).",
+      "uri": "capsule://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+      "expected": {
+        "scheme": "capsule",
+        "chain": null,
+        "reference_type": "hash",
+        "hash_algorithm": "sha3",
+        "hash_value": "e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+        "sequence": null,
+        "id": null,
+        "fragment": null
+      }
+    },
+    {
+      "name": "hash_with_fragment_section",
+      "description": "Hash reference with fragment pointing to a section.",
+      "uri": "capsule://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee#reasoning",
+      "expected": {
+        "scheme": "capsule",
+        "chain": null,
+        "reference_type": "hash",
+        "hash_algorithm": "sha3",
+        "hash_value": "e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+        "sequence": null,
+        "id": null,
+        "fragment": "reasoning"
+      }
+    },
+    {
+      "name": "hash_with_fragment_nested",
+      "description": "Hash reference with fragment to a nested field.",
+      "uri": "capsule://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee#reasoning/confidence",
+      "expected": {
+        "scheme": "capsule",
+        "chain": null,
+        "reference_type": "hash",
+        "hash_algorithm": "sha3",
+        "hash_value": "e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+        "sequence": null,
+        "id": null,
+        "fragment": "reasoning/confidence"
+      }
+    },
+    {
+      "name": "hash_with_fragment_array_index",
+      "description": "Hash reference with fragment to an array element.",
+      "uri": "capsule://sha3_f4e04d02aadacf1cc051d4ce10b72c486827d5f7036ee59e16309ebd923cd194#execution/tool_calls/0",
+      "expected": {
+        "scheme": "capsule",
+        "chain": null,
+        "reference_type": "hash",
+        "hash_algorithm": "sha3",
+        "hash_value": "f4e04d02aadacf1cc051d4ce10b72c486827d5f7036ee59e16309ebd923cd194",
+        "sequence": null,
+        "id": null,
+        "fragment": "execution/tool_calls/0"
+      }
+    },
+    {
+      "name": "chain_sequence",
+      "description": "Chain name with sequence number.",
+      "uri": "capsule://deploy-bot/42",
+      "expected": {
+        "scheme": "capsule",
+        "chain": "deploy-bot",
+        "reference_type": "sequence",
+        "hash_algorithm": null,
+        "hash_value": null,
+        "sequence": 42,
+        "id": null,
+        "fragment": null
+      }
+    },
+    {
+      "name": "chain_hash",
+      "description": "Chain name with hash reference.",
+      "uri": "capsule://deploy-bot/sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+      "expected": {
+        "scheme": "capsule",
+        "chain": "deploy-bot",
+        "reference_type": "hash",
+        "hash_algorithm": "sha3",
+        "hash_value": "e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+        "sequence": null,
+        "id": null,
+        "fragment": null
+      }
+    },
+    {
+      "name": "id_reference",
+      "description": "UUID-based Capsule reference.",
+      "uri": "capsule://a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "expected": {
+        "scheme": "capsule",
+        "chain": null,
+        "reference_type": "id",
+        "hash_algorithm": null,
+        "hash_value": null,
+        "sequence": null,
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "fragment": null
+      }
+    },
+    {
+      "name": "chain_sequence_zero",
+      "description": "Chain genesis reference (sequence 0).",
+      "uri": "capsule://my-chain/0",
+      "expected": {
+        "scheme": "capsule",
+        "chain": "my-chain",
+        "reference_type": "sequence",
+        "hash_algorithm": null,
+        "hash_value": null,
+        "sequence": 0,
+        "id": null,
+        "fragment": null
+      }
+    },
+    {
+      "name": "chain_with_dots_and_underscores",
+      "description": "Chain name with allowed special characters.",
+      "uri": "capsule://org.team_deploy.v2/15",
+      "expected": {
+        "scheme": "capsule",
+        "chain": "org.team_deploy.v2",
+        "reference_type": "sequence",
+        "hash_algorithm": null,
+        "hash_value": null,
+        "sequence": 15,
+        "id": null,
+        "fragment": null
+      }
+    },
+    {
+      "name": "id_with_fragment",
+      "description": "UUID reference with fragment.",
+      "uri": "capsule://a1b2c3d4-e5f6-7890-abcd-ef1234567890#authority",
+      "expected": {
+        "scheme": "capsule",
+        "chain": null,
+        "reference_type": "id",
+        "hash_algorithm": null,
+        "hash_value": null,
+        "sequence": null,
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "fragment": "authority"
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "name": "wrong_scheme",
+      "description": "Must use capsule:// scheme.",
+      "uri": "http://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+      "reason": "Wrong scheme: expected 'capsule'"
+    },
+    {
+      "name": "hash_too_short",
+      "description": "SHA3-256 hash must be exactly 64 hex characters.",
+      "uri": "capsule://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8d",
+      "reason": "Hash too short: 63 hex characters instead of 64"
+    },
+    {
+      "name": "hash_too_long",
+      "description": "SHA3-256 hash must be exactly 64 hex characters.",
+      "uri": "capsule://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8deee",
+      "reason": "Hash too long: 65 hex characters instead of 64"
+    },
+    {
+      "name": "hash_uppercase",
+      "description": "Hash must be lowercase hex.",
+      "uri": "capsule://sha3_E6266F6D907A02E1F3531DC354765C0BCA506180B91C1F5892A544B81BCF8DEE",
+      "reason": "Hash contains uppercase characters"
+    },
+    {
+      "name": "hash_non_hex",
+      "description": "Hash must contain only hex digits.",
+      "uri": "capsule://sha3_g6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee",
+      "reason": "Hash contains non-hex character 'g'"
+    },
+    {
+      "name": "unknown_hash_algorithm",
+      "description": "Only sha3_ prefix is defined in CPS v1.0.",
+      "uri": "capsule://md5_e6266f6d907a02e1f3531dc354765c0b",
+      "reason": "Unknown hash algorithm prefix 'md5_'"
+    },
+    {
+      "name": "empty_uri",
+      "description": "Empty string is not a valid URI.",
+      "uri": "",
+      "reason": "Empty URI"
+    },
+    {
+      "name": "scheme_only",
+      "description": "Scheme without authority or reference.",
+      "uri": "capsule://",
+      "reason": "Missing reference after scheme"
+    },
+    {
+      "name": "invalid_uuid",
+      "description": "Malformed UUID.",
+      "uri": "capsule://not-a-valid-uuid-at-all",
+      "reason": "Invalid reference: not a hash, sequence, or UUID"
+    },
+    {
+      "name": "fragment_traversal",
+      "description": "Fragment must not attempt path traversal.",
+      "uri": "capsule://sha3_e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee#../../etc/passwd",
+      "reason": "Fragment contains path traversal"
+    },
+    {
+      "name": "negative_sequence",
+      "description": "Sequence numbers must be non-negative.",
+      "uri": "capsule://my-chain/-1",
+      "reason": "Negative sequence number"
+    }
+  ]
+}

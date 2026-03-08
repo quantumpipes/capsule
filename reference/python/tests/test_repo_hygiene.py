@@ -75,8 +75,8 @@ class TestGoldenFixtures:
             return json.load(f)
 
     def test_fixture_count_is_fifteen(self, fixtures: dict):
-        """CPS v1.0 defines exactly 15 golden test vectors."""
-        assert len(fixtures["fixtures"]) == 15
+        """CPS v1.0 defines exactly 16 golden test vectors."""
+        assert len(fixtures["fixtures"]) == 16
 
     def test_fixture_names_are_unique(self, fixtures: dict):
         names = [f["name"] for f in fixtures["fixtures"]]
@@ -85,6 +85,53 @@ class TestGoldenFixtures:
     def test_fixture_hashes_are_valid_sha3_hex(self, fixtures: dict):
         for f in fixtures["fixtures"]:
             assert re.fullmatch(r"[0-9a-f]{64}", f["sha3_256_hash"]), f["name"]
+
+
+class TestVersionAlignment:
+    """All version markers must agree across the repo."""
+
+    def test_spec_version_file_matches_changelog(self):
+        """spec/VERSION must match the major.minor of the latest CHANGELOG release."""
+        spec_version = (REPO_ROOT / "spec" / "VERSION").read_text().strip()
+        changelog = (REPO_ROOT / "CHANGELOG.md").read_text()
+        match = re.search(r"\[(\d+)\.(\d+)\.\d+\]", changelog)
+        assert match, "No versioned release found in CHANGELOG"
+        expected = f"{match.group(1)}.{match.group(2)}"
+        assert spec_version == expected, (
+            f"spec/VERSION ({spec_version}) != CHANGELOG ({expected})"
+        )
+
+    def test_python_init_version_matches_pyproject(self):
+        """__version__ in __init__.py must match pyproject.toml."""
+        import tomllib
+
+        with open(PYTHON_ROOT / "pyproject.toml", "rb") as f:
+            pyproject_version = tomllib.load(f)["project"]["version"]
+        init_text = (SRC_DIR / "__init__.py").read_text()
+        match = re.search(r'__version__\s*=\s*"([^"]+)"', init_text)
+        assert match, "__version__ not found in __init__.py"
+        assert match.group(1) == pyproject_version, (
+            f"__init__.py ({match.group(1)}) != pyproject.toml ({pyproject_version})"
+        )
+
+    def test_changelog_has_versioned_release(self):
+        """CHANGELOG must have at least one versioned release (not just [Unreleased])."""
+        changelog = (REPO_ROOT / "CHANGELOG.md").read_text()
+        releases = re.findall(r"## \[(\d+\.\d+\.\d+)\]", changelog)
+        assert len(releases) >= 1, "No versioned releases in CHANGELOG"
+
+    def test_changelog_unreleased_section_is_empty_or_minimal(self):
+        """[Unreleased] section should not contain leftover content after a release."""
+        changelog = (REPO_ROOT / "CHANGELOG.md").read_text()
+        unreleased_match = re.search(
+            r"## \[Unreleased\]\s*\n(.*?)(?=\n## \[|$)", changelog, re.DOTALL,
+        )
+        if unreleased_match:
+            content = unreleased_match.group(1).strip()
+            content = content.lstrip("-").strip()
+            assert len(content) < 50, (
+                f"[Unreleased] section has substantial leftover content: {content[:100]}"
+            )
 
 
 class TestCIMakefileAlignment:

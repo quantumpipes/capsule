@@ -346,7 +346,7 @@ See [URI Scheme](./uri-scheme.md) for the full specification.
 | Document | Description |
 |---|---|
 | [URI Scheme](./uri-scheme.md) | `capsule://` content-addressable URI scheme |
-| [Conformance Suite](../conformance/) | 15 golden test vectors |
+| [Conformance Suite](../conformance/) | 16 golden test vectors |
 | [Python Reference](../reference/python/) | Python reference implementation |
 | [TypeScript Reference](../reference/typescript/) | TypeScript reference implementation |
 

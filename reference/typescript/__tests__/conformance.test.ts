@@ -24,8 +24,8 @@ const fixtures: Array<{
 }> = fixturesData.fixtures;
 
 describe("Golden Fixture Conformance (CPS v1.0)", () => {
-  it("should have exactly 15 fixtures", () => {
-    expect(fixtures).toHaveLength(15);
+  it("should have exactly 16 fixtures", () => {
+    expect(fixtures).toHaveLength(16);
   });
 
   it("should have unique fixture names", () => {

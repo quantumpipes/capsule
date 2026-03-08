@@ -183,7 +183,7 @@ Selected controls from Annex A.
 Capsule sealed in any language can be verified in any other. The Capsule Protocol Specification (CPS) defines:
 
 - Byte-level canonical JSON serialization rules
-- 15 golden test vectors covering all CapsuleTypes, Unicode, fractional timestamps, chain sequences, empty vs null, deep nesting, and failure paths
+- 16 golden test vectors covering all CapsuleTypes, Unicode, fractional timestamps, chain sequences, empty vs null, deep nesting, and failure paths
 - SHA3-256 hash determinism across implementations
 
 The Python reference implementation is available now. Cross-language SDKs (TypeScript, Go, Rust) are planned. All must produce byte-identical canonical JSON and matching SHA3-256 hashes for the golden test vectors.

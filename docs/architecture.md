@@ -358,7 +358,7 @@ capsule = await chain.seal_and_store(capsule, seal)
 | `KILL` | `"kill"` | Kill switch activation |
 | `WORKFLOW` | `"workflow"` | Workflow orchestration |
 | `CHAT` | `"chat"` | Chat or RAG interaction |
-| `VAULT` | `"vault"` | Document operations |
+| `VAULT` | `"vault"` | Secret management and document operations |
 | `AUTH` | `"auth"` | Authentication events |
 
 Capsules can form parent-child hierarchies: `WORKFLOW` (parent) -> `AGENT` (child) -> `TOOL` (grandchild), linked by `parent_id`.

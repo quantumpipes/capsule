@@ -9,6 +9,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.2.0] - 2026-03-08
+
+Protocol-first restructure, TypeScript implementation, finalized URI scheme, and full CapsuleType conformance.
+
 ### Changed
 
 - **Protocol-first repository restructure** — the repo now presents as an open protocol specification, not a Python package:
@@ -21,11 +27,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **`capsule://` URI scheme** — content-addressable references to Capsule records via their SHA3-256 hash. Spec at `spec/uri-scheme.md`. Supports hash references (`capsule://sha3_<hash>`), chain references (`capsule://chain/42`), ID references, and fragment syntax into the 6 sections.
-- **TypeScript reference implementation** — full CPS-conformant implementation at `reference/typescript/`: Capsule model with factories, canonical JSON serializer (CPS Section 2 with float-path handling), SHA3-256 hashing, Ed25519 seal/verify, and chain verification. Passes all 15 golden fixtures. 101 tests, 100% coverage (v8). Uses `@noble/hashes` ^2.0.1, `@noble/ed25519` ^3.0.0, vitest ^4.0.0, TypeScript ^5.9.0. Node.js >= 20.19.0.
+- **`capsule://` URI scheme (Active)** — content-addressable references to Capsule records via their SHA3-256 hash. Spec at `spec/uri-scheme.md`, finalized from Draft to Active. Supports hash references (`capsule://sha3_<hash>`), chain references (`capsule://chain/42`), ID references, and fragment syntax into the 6 sections. Includes URI conformance vectors at `conformance/uri-fixtures.json`.
+- **TypeScript reference implementation** — full CPS-conformant implementation at `reference/typescript/`: Capsule model with factories, canonical JSON serializer (CPS Section 2 with float-path handling), SHA3-256 hashing, Ed25519 seal/verify, and chain verification. Passes all 16 golden fixtures. 101 tests, 100% coverage (v8). Uses `@noble/hashes` ^2.0.1, `@noble/ed25519` ^3.0.0, vitest ^4.0.0, TypeScript ^5.9.0. Node.js >= 20.19.0.
 - **Implementor's Guide** (`docs/implementors-guide.md`) — step-by-step instructions for building a conformant CPS implementation in any language, with language-specific pitfalls for TypeScript, Go, and Rust.
 - **Why Capsules** (`docs/why-capsules.md`) — the case for cryptographic AI memory, aimed at decision-makers and architects.
-- **URI scheme security considerations** — `spec/uri-scheme.md` now includes: URI injection validation, resolution trust model, denial-of-service mitigations, fragment path traversal safety, no ambient authority principle.
+- **URI scheme security considerations** — `spec/uri-scheme.md` includes: URI injection validation, resolution trust model, denial-of-service mitigations, fragment path traversal safety, no ambient authority principle.
+- **URI conformance vectors** (`conformance/uri-fixtures.json`) — 10 valid and 11 invalid URI parsing test vectors for cross-language URI parser verification.
+- **`vault` golden fixture** — conformance suite now covers all 8 CapsuleTypes (16 total fixtures, up from 15). The `vault_secret` fixture tests secret rotation with policy-based authority.
 - **Protocol structure tests** (`reference/python/tests/test_protocol_structure.py`) — guards the protocol-first layout, spec completeness, conformance suite integrity, TypeScript type alignment with spec, markdown link resolution, CI configuration, and root-level file requirements.
 - **Dependabot for TypeScript** — npm dependency updates for `reference/typescript/`.
 
@@ -92,5 +100,6 @@ Initial public release of the Capsule Protocol Specification (CPS) v1.0 referenc
 
 ---
 
+[1.2.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.2.0
 [1.1.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.1.0
 [1.0.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.0.0

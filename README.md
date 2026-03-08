@@ -8,7 +8,7 @@ Every AI action produces a Capsule — a tamper-evident, content-addressable rec
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CPS](https://img.shields.io/badge/CPS-v1.0-orange.svg)](./spec/)
-[![Conformance](https://img.shields.io/badge/Conformance-15_vectors-brightgreen.svg)](./conformance/)
+[![Conformance](https://img.shields.io/badge/Conformance-16_vectors-brightgreen.svg)](./conformance/)
 [![FIPS](https://img.shields.io/badge/Crypto-FIPS_202%20·%20186--5%20·%20204-purple.svg)](#cryptographic-seal)
 [![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg)](./reference/python/)
 
@@ -58,7 +58,7 @@ Section 3 (Reasoning) records the AI's analysis, the options it considered, the 
 Every Capsule is hashed and signed at the moment of creation. If anyone modifies the content after the fact, the hash changes, the signature fails, and the chain breaks. This is a property of every individual record, not the storage layer.
 
 **3. Cross-language interoperability.**
-The Capsule Protocol Specification defines byte-level serialization rules. A Capsule sealed in Python can be verified in TypeScript, Go, or Rust. All implementations produce identical canonical JSON for the same input, validated by 15 golden test vectors.
+The Capsule Protocol Specification defines byte-level serialization rules. A Capsule sealed in Python can be verified in TypeScript, Go, or Rust. All implementations produce identical canonical JSON for the same input, validated by 16 golden test vectors.
 
 ---
 
@@ -121,7 +121,7 @@ The **Capsule Protocol Specification (CPS)** defines the complete protocol:
 |---|---|
 | [CPS v1.0](./spec/) | Record structure, canonical serialization, sealing algorithm, hash chain rules |
 | [URI Scheme](./spec/uri-scheme.md) | `capsule://` content-addressable references |
-| [Conformance Suite](./conformance/) | 15 golden test vectors for cross-language verification |
+| [Conformance Suite](./conformance/) | 16 golden test vectors for cross-language verification |
 
 The specification is language-agnostic. Any implementation that passes the conformance suite can seal and verify Capsules produced by any other.
 
@@ -169,7 +169,7 @@ See more examples in [`examples/`](./examples/).
 | Language | Status | Install | Source |
 |---|---|---|---|
 | **Python** | v1.1.0 (stable) | `pip install qp-capsule` | [`reference/python/`](./reference/python/) |
-| **TypeScript** | v0.0.1 (conformant, 15/15 fixtures) | `npm install @quantumpipes/capsule` | [`reference/typescript/`](./reference/typescript/) |
+| **TypeScript** | v0.0.1 (conformant, 16/16 fixtures) | `npm install @quantumpipes/capsule` | [`reference/typescript/`](./reference/typescript/) |
 | Go | Separate repo (planned) | — | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) |
 | Rust | Separate repo (planned) | — | [quantumpipes/capsule-rust](https://github.com/quantumpipes/capsule-rust) |
 

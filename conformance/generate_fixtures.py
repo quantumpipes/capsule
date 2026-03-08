@@ -212,6 +212,7 @@ FIXED_UUID_12 = UUID("f2a3b4c5-d6e7-8901-fabc-012345678901")
 FIXED_UUID_13 = UUID("a3b4c5d6-e7f8-9012-abcd-123456789abc")
 FIXED_UUID_14 = UUID("b4c5d6e7-f8a9-0123-bcde-23456789abcd")
 FIXED_UUID_15 = UUID("c5d6e7f8-a9b0-1234-cdef-3456789abcde")
+FIXED_UUID_16 = UUID("d6e7f8a9-b0c1-2345-defa-456789abcdef")
 
 # --- Fixture 4: Tool invocation ---
 fixtures.append(make_fixture(
@@ -473,6 +474,39 @@ fixtures.append(make_fixture(
         ),
         outcome=OutcomeSection(status="success",
                                summary="MFA verified, admin access granted"),
+    ),
+))
+
+# --- Fixture 16: Vault capsule ---
+fixtures.append(make_fixture(
+    "vault_secret",
+    "Vault-type capsule for secret storage/rotation. Tests CapsuleType.VAULT with "
+    "tool call for secret rotation and policy-based authority.",
+    Capsule(
+        id=FIXED_UUID_16,
+        type=CapsuleType.VAULT,
+        domain="secrets",
+        trigger=TriggerSection(type="scheduled", source="secret_rotator", timestamp=FIXED_TIME,
+                               request="Rotate database credentials for production"),
+        context=ContextSection(agent_id="vault-agent",
+                               environment={"vault_backend": "hashicorp", "region": "us-east-1"}),
+        authority=AuthoritySection(type="policy", policy_reference="POLICY-SECRET-ROTATION-90D"),
+        execution=ExecutionSection(
+            tool_calls=[
+                ToolCall(tool="vault_rotate", arguments={"secret": "db/prod/credentials",
+                                                         "ttl": "90d"},
+                         result={"rotated": True, "version": 7},
+                         success=True, duration_ms=320),
+            ],
+            duration_ms=320,
+            resources_used={"api_calls": 2},
+        ),
+        outcome=OutcomeSection(
+            status="success",
+            result={"secret_path": "db/prod/credentials", "new_version": 7},
+            summary="Rotated database credentials, version 7",
+            side_effects=["Old credentials revoked after 5m grace period"],
+        ),
     ),
 ))
 

@@ -92,7 +92,7 @@ mount_capsules(app, capsules, prefix="/api/v1/capsules")
 
 ## Conformance
 
-This implementation passes all 15 golden test vectors:
+This implementation passes all 16 golden test vectors:
 
 ```bash
 cd reference/python

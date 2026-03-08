@@ -20,7 +20,7 @@ The protocol specification and conformance suite are the authoritative source of
 |---|---|
 | [CPS v1.0 Specification](../spec/) | Record structure, serialization, sealing, chain rules |
 | [URI Scheme](../spec/uri-scheme.md) | `capsule://` content-addressable references |
-| [Conformance Suite](../conformance/) | 15 golden test vectors |
+| [Conformance Suite](../conformance/) | 16 golden test vectors |
 
 ## Implementation Documentation
 

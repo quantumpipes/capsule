@@ -1,8 +1,8 @@
 # Conformance Test Suite
 
-**15 golden test vectors for cross-language interoperability.**
+**16 golden test vectors for cross-language interoperability.**
 
-Any implementation of the Capsule Protocol Specification (CPS) must produce byte-identical output for these test vectors. If your implementation passes all 15 fixtures, it can seal and verify Capsules interchangeably with every other conformant implementation.
+Any implementation of the Capsule Protocol Specification (CPS) must produce byte-identical output for these test vectors. If your implementation passes all 16 fixtures, it can seal and verify Capsules interchangeably with every other conformant implementation.
 
 ---
 
@@ -25,7 +25,7 @@ For every fixture:
 3. Compute SHA3-256 of the canonical JSON bytes (UTF-8 encoded)
 4. Compare the hash against `sha3_256_hash`
 
-If all 15 pass, your implementation is conformant.
+If all 16 pass, your implementation is conformant.
 
 ---
 
@@ -48,6 +48,7 @@ If all 15 pass, your implementation is conformant.
 | **chain_linked** | Second Capsule with previous_hash set |
 | **failure_with_error** | Failed tool call with error details |
 | **auth_escalated** | Auth-type with MFA escalation chain |
+| **vault_secret** | Vault-type with secret rotation and policy authority |
 
 ---
 
@@ -61,6 +62,40 @@ python generate_fixtures.py
 ```
 
 This regenerates `fixtures.json` from the reference implementation. The generator uses the Python reference at `../reference/python/` as the source of truth.
+
+---
+
+## URI Conformance Vectors
+
+The `uri-fixtures.json` file provides test vectors for `capsule://` URI parsing. Implementations that include a URI parser should validate against these vectors.
+
+Each entry in the `valid` array contains:
+
+| Field | Type | Description |
+|---|---|---|
+| `uri` | string | The `capsule://` URI to parse |
+| `expected` | object | The expected parse result with `scheme`, `chain`, `reference_type`, `hash_algorithm`, `hash_value`, `sequence`, `id`, and `fragment` |
+
+Each entry in the `invalid` array contains:
+
+| Field | Type | Description |
+|---|---|---|
+| `uri` | string | A malformed or invalid URI |
+| `reason` | string | Why this URI must be rejected |
+
+### URI conformance check
+
+For every valid fixture:
+
+1. Parse the URI
+2. Compare every field in the parse result against `expected`
+
+For every invalid fixture:
+
+1. Attempt to parse the URI
+2. Confirm the parser rejects it (returns an error or null)
+
+The URI spec is at [`spec/uri-scheme.md`](../spec/uri-scheme.md).
 
 ---
 

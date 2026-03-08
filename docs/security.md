@@ -197,7 +197,7 @@ Use this checklist when evaluating Capsule for your organization:
 | Minimal dependency footprint | Yes | 1 required dependency (pynacl) |
 | Air-gapped operation | Yes | Zero network dependencies at runtime |
 | Open source with patent grant | Yes | Apache 2.0 + additional patent grant |
-| Cross-language verification | Partial | Python SDK (available); TypeScript, Go, Rust (planned). CPS spec + 15 golden test vectors published for cross-language conformance. |
+| Cross-language verification | Partial | Python SDK (available); TypeScript, Go, Rust (planned). CPS spec + 16 golden test vectors published for cross-language conformance. |
 | Audit trail immutability | Yes | Hash chain; any modification breaks the chain |
 | Pre-execution reasoning capture | Yes | Section 3 (Reasoning) captured before Section 5 (Execution) |
 | Multi-tenant isolation | Yes | PostgreSQL backend with `tenant_id` scoping |

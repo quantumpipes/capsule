@@ -2,7 +2,7 @@
   "version": "1.0",
   "specification": "Capsule Protocol Specification v1.0",
   "generated_by": "Python reference implementation (qp-capsule)",
-  "generated_at": "2026-03-07T18:11:36.964652+00:00",
+  "generated_at": "2026-03-08T15:09:35.637607+00:00",
   "description": "Golden test vectors for cross-language Capsule verification. Each fixture contains a capsule_dict, the expected canonical_json, and the expected sha3_256_hash. A conformant implementation must produce byte-identical canonical_json and matching hash for each fixture.",
   "fixtures": [
     {
@@ -1084,6 +1084,88 @@
       },
       "canonical_json": "{\"authority\":{\"approver\":\"admin@example.com\",\"chain\":[{\"level\":1,\"method\":\"password\",\"result\":\"passed\"},{\"level\":2,\"method\":\"totp\",\"result\":\"passed\"}],\"escalation_reason\":\"Admin action requires MFA\",\"policy_reference\":null,\"type\":\"escalated\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"auth\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c5d6e7f8-a9b0-1234-cdef-3456789abcde\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"MFA verified, admin access granted\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"MFA challenge for admin action\",\"source\":\"auth_service\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":\"admin@example.com\"},\"type\":\"auth\"}",
       "sha3_256_hash": "336e52623385149110d295881629e517f0ed16740410ac0ec308fced730d49fa"
+    },
+    {
+      "name": "vault_secret",
+      "description": "Vault-type capsule for secret storage/rotation. Tests CapsuleType.VAULT with tool call for secret rotation and policy-based authority.",
+      "capsule_dict": {
+        "id": "d6e7f8a9-b0c1-2345-defa-456789abcdef",
+        "type": "vault",
+        "domain": "secrets",
+        "parent_id": null,
+        "sequence": 0,
+        "previous_hash": null,
+        "trigger": {
+          "type": "scheduled",
+          "source": "secret_rotator",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "Rotate database credentials for production",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "vault-agent",
+          "session_id": null,
+          "environment": {
+            "vault_backend": "hashicorp",
+            "region": "us-east-1"
+          }
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "policy",
+          "approver": null,
+          "policy_reference": "POLICY-SECRET-ROTATION-90D",
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [
+            {
+              "tool": "vault_rotate",
+              "arguments": {
+                "secret": "db/prod/credentials",
+                "ttl": "90d"
+              },
+              "result": {
+                "rotated": true,
+                "version": 7
+              },
+              "success": true,
+              "duration_ms": 320,
+              "error": null
+            }
+          ],
+          "duration_ms": 320,
+          "resources_used": {
+            "api_calls": 2
+          }
+        },
+        "outcome": {
+          "status": "success",
+          "result": {
+            "secret_path": "db/prod/credentials",
+            "new_version": 7
+          },
+          "summary": "Rotated database credentials, version 7",
+          "error": null,
+          "side_effects": [
+            "Old credentials revoked after 5m grace period"
+          ],
+          "metrics": {}
+        }
+      },
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":\"POLICY-SECRET-ROTATION-90D\",\"type\":\"policy\"},\"context\":{\"agent_id\":\"vault-agent\",\"environment\":{\"region\":\"us-east-1\",\"vault_backend\":\"hashicorp\"},\"session_id\":null},\"domain\":\"secrets\",\"execution\":{\"duration_ms\":320,\"resources_used\":{\"api_calls\":2},\"tool_calls\":[{\"arguments\":{\"secret\":\"db/prod/credentials\",\"ttl\":\"90d\"},\"duration_ms\":320,\"error\":null,\"result\":{\"rotated\":true,\"version\":7},\"success\":true,\"tool\":\"vault_rotate\"}]},\"id\":\"d6e7f8a9-b0c1-2345-defa-456789abcdef\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":{\"new_version\":7,\"secret_path\":\"db/prod/credentials\"},\"side_effects\":[\"Old credentials revoked after 5m grace period\"],\"status\":\"success\",\"summary\":\"Rotated database credentials, version 7\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Rotate database credentials for production\",\"source\":\"secret_rotator\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"scheduled\",\"user_id\":null},\"type\":\"vault\"}",
+      "sha3_256_hash": "af88f095652eefeb8b6aeaca64860ac4ffc0476f3f274157387dd633ab6c9396"
     }
   ]
 }

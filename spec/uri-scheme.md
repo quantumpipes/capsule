@@ -1,7 +1,7 @@
 # Capsule URI Scheme
 
-**Version**: 1.0 (Draft)
-**Status**: Draft
+**Version**: 1.0
+**Status**: Active
 **Last Updated**: 2026-03-07
 
 ---
@@ -227,4 +227,4 @@ A `capsule://` URI MUST NOT grant any capability beyond read access to the refer
 
 ---
 
-*This specification is a draft. Feedback welcome via [protocol change proposal](https://github.com/quantumpipes/capsule/issues/new?template=spec-change.md).*
+*Feedback welcome via [protocol change proposal](https://github.com/quantumpipes/capsule/issues/new?template=spec-change.md).*

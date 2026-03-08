@@ -123,6 +123,17 @@ class TestSpecDirectory:
         text = (REPO_ROOT / "spec" / "uri-scheme.md").read_text()
         assert "trust" in text.lower() and "resolution" in text.lower()
 
+    def test_uri_scheme_status_is_active(self):
+        """URI scheme must be finalized, not Draft."""
+        text = (REPO_ROOT / "spec" / "uri-scheme.md").read_text()
+        assert "**Status**: Active" in text, "URI scheme spec is not Active"
+        assert "**Status**: Draft" not in text, "URI scheme spec still marked Draft"
+
+    def test_uri_scheme_version_not_draft(self):
+        """Version line must not contain '(Draft)'."""
+        text = (REPO_ROOT / "spec" / "uri-scheme.md").read_text()
+        assert "(Draft)" not in text, "URI scheme version still contains (Draft)"
+
 
 # ---------------------------------------------------------------------------
 # Conformance suite: golden test vectors
@@ -158,7 +169,7 @@ class TestConformanceSuite:
         for fixture in data["fixtures"]:
             capsule = fixture["capsule_dict"]
             types_in_fixtures.add(capsule["type"])
-        expected = {"agent", "tool", "system", "kill", "workflow", "chat", "auth"}
+        expected = {"agent", "tool", "system", "kill", "workflow", "chat", "vault", "auth"}
         missing = expected - types_in_fixtures
         assert not missing, f"CapsuleTypes missing from fixtures: {missing}"
 
@@ -169,6 +180,139 @@ class TestConformanceSuite:
         names = {f["name"] for f in data["fixtures"]}
         assert "chain_genesis" in names, "Missing chain_genesis fixture"
         assert "chain_linked" in names, "Missing chain_linked fixture"
+
+    def test_vault_fixture_present(self):
+        """Vault fixture must exist to cover all 8 CapsuleTypes."""
+        with open(REPO_ROOT / "conformance" / "fixtures.json") as f:
+            data = json.load(f)
+        names = {f["name"] for f in data["fixtures"]}
+        assert "vault_secret" in names, "Missing vault_secret fixture"
+
+    def test_vault_fixture_semantics(self):
+        """Vault fixture must use type=vault with appropriate domain and authority."""
+        with open(REPO_ROOT / "conformance" / "fixtures.json") as f:
+            data = json.load(f)
+        vault = next(f for f in data["fixtures"] if f["name"] == "vault_secret")
+        capsule = vault["capsule_dict"]
+        assert capsule["type"] == "vault"
+        assert capsule["domain"] == "secrets"
+        assert capsule["trigger"]["type"] == "scheduled"
+        assert capsule["authority"]["type"] == "policy"
+        assert capsule["authority"]["policy_reference"] is not None
+
+
+# ---------------------------------------------------------------------------
+# URI conformance vectors
+# ---------------------------------------------------------------------------
+
+
+class TestURIConformanceVectors:
+    """The uri-fixtures.json must be structurally valid and internally consistent."""
+
+    @pytest.fixture()
+    def uri_data(self) -> dict:
+        with open(REPO_ROOT / "conformance" / "uri-fixtures.json") as f:
+            return json.load(f)
+
+    @pytest.fixture()
+    def capsule_fixtures(self) -> dict:
+        with open(REPO_ROOT / "conformance" / "fixtures.json") as f:
+            return json.load(f)
+
+    def test_uri_fixtures_file_exists(self):
+        assert (REPO_ROOT / "conformance" / "uri-fixtures.json").exists()
+
+    def test_has_valid_and_invalid_sections(self, uri_data: dict):
+        assert "valid" in uri_data, "Missing 'valid' section"
+        assert "invalid" in uri_data, "Missing 'invalid' section"
+        assert len(uri_data["valid"]) > 0, "No valid URI vectors"
+        assert len(uri_data["invalid"]) > 0, "No invalid URI vectors"
+
+    def test_valid_entries_have_required_fields(self, uri_data: dict):
+        required = {"name", "description", "uri", "expected"}
+        for entry in uri_data["valid"]:
+            missing = required - set(entry.keys())
+            assert not missing, f"Valid entry '{entry.get('name')}' missing: {missing}"
+
+    def test_valid_expected_has_parse_fields(self, uri_data: dict):
+        parse_fields = {
+            "scheme", "chain", "reference_type", "hash_algorithm",
+            "hash_value", "sequence", "id", "fragment",
+        }
+        for entry in uri_data["valid"]:
+            expected = entry["expected"]
+            missing = parse_fields - set(expected.keys())
+            assert not missing, (
+                f"Valid entry '{entry['name']}' expected missing: {missing}"
+            )
+
+    def test_all_valid_uris_start_with_capsule_scheme(self, uri_data: dict):
+        for entry in uri_data["valid"]:
+            assert entry["uri"].startswith("capsule://"), (
+                f"Valid URI '{entry['name']}' doesn't start with capsule://"
+            )
+            assert entry["expected"]["scheme"] == "capsule"
+
+    def test_invalid_entries_have_required_fields(self, uri_data: dict):
+        required = {"name", "description", "uri", "reason"}
+        for entry in uri_data["invalid"]:
+            missing = required - set(entry.keys())
+            assert not missing, f"Invalid entry '{entry.get('name')}' missing: {missing}"
+
+    def test_valid_names_are_unique(self, uri_data: dict):
+        names = [e["name"] for e in uri_data["valid"]]
+        assert len(names) == len(set(names)), "Duplicate valid URI vector names"
+
+    def test_invalid_names_are_unique(self, uri_data: dict):
+        names = [e["name"] for e in uri_data["invalid"]]
+        assert len(names) == len(set(names)), "Duplicate invalid URI vector names"
+
+    def test_hash_uris_reference_valid_sha3_hex(self, uri_data: dict):
+        """Hash references in valid URIs must contain exactly 64 lowercase hex chars."""
+        for entry in uri_data["valid"]:
+            if entry["expected"]["reference_type"] == "hash":
+                h = entry["expected"]["hash_value"]
+                assert re.fullmatch(r"[0-9a-f]{64}", h), (
+                    f"Invalid hash in '{entry['name']}': {h}"
+                )
+
+    def test_hash_uris_use_hashes_from_golden_fixtures(
+        self, uri_data: dict, capsule_fixtures: dict,
+    ):
+        """Hash values in valid URI vectors should come from real golden fixtures."""
+        golden_hashes = {
+            f["sha3_256_hash"] for f in capsule_fixtures["fixtures"]
+        }
+        for entry in uri_data["valid"]:
+            if entry["expected"]["reference_type"] == "hash":
+                h = entry["expected"]["hash_value"]
+                assert h in golden_hashes, (
+                    f"URI vector '{entry['name']}' uses hash {h[:16]}... "
+                    f"not found in golden fixtures"
+                )
+
+    def test_covers_all_reference_types(self, uri_data: dict):
+        """Must have vectors for hash, sequence, and id reference types."""
+        ref_types = {e["expected"]["reference_type"] for e in uri_data["valid"]}
+        assert {"hash", "sequence", "id"} <= ref_types, (
+            f"Missing reference types: { {'hash', 'sequence', 'id'} - ref_types}"
+        )
+
+    def test_covers_fragment_syntax(self, uri_data: dict):
+        """At least one valid vector must include a fragment."""
+        has_fragment = any(
+            e["expected"]["fragment"] is not None for e in uri_data["valid"]
+        )
+        assert has_fragment, "No valid URI vectors test fragment syntax"
+
+    def test_invalid_covers_common_attack_vectors(self, uri_data: dict):
+        """Invalid vectors must cover injection, truncation, and traversal."""
+        names = {e["name"] for e in uri_data["invalid"]}
+        assert "hash_too_short" in names, "Missing truncated hash vector"
+        assert "hash_too_long" in names, "Missing overlong hash vector"
+        assert "fragment_traversal" in names, "Missing path traversal vector"
+        assert "wrong_scheme" in names, "Missing wrong-scheme vector"
+        assert "hash_uppercase" in names, "Missing uppercase hash vector"
 
 
 # ---------------------------------------------------------------------------
@@ -503,3 +647,20 @@ class TestCIConfiguration:
 
     def test_no_old_cps_change_template(self):
         assert not (REPO_ROOT / ".github" / "ISSUE_TEMPLATE" / "cps_change.md").exists()
+
+    def test_typescript_release_workflow_exists(self):
+        assert (REPO_ROOT / ".github" / "workflows" / "typescript-release.yaml").exists()
+
+    def test_typescript_release_triggers_on_tags(self):
+        text = (REPO_ROOT / ".github" / "workflows" / "typescript-release.yaml").read_text()
+        assert '"v*"' in text, "TypeScript release must trigger on version tags"
+
+    def test_typescript_release_runs_conformance(self):
+        text = (REPO_ROOT / ".github" / "workflows" / "typescript-release.yaml").read_text()
+        assert "conformance" in text.lower(), (
+            "TypeScript release must run conformance tests before publish"
+        )
+
+    def test_typescript_release_publishes_to_npm(self):
+        text = (REPO_ROOT / ".github" / "workflows" / "typescript-release.yaml").read_text()
+        assert "npm publish" in text, "TypeScript release must publish to npm"

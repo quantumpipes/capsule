@@ -20,7 +20,7 @@ A conformant CPS implementation provides 9 capabilities:
 | 6 | **seal()** | Compute hash + Ed25519 signature |
 | 7 | **verify()** | Recompute hash and verify signature |
 | 8 | **Chain verification** | Validate sequence numbers and hash linkage |
-| 9 | **Conformance** | Pass all 15 golden test vectors |
+| 9 | **Conformance** | Pass all 16 golden test vectors |
 
 ---
 
@@ -127,7 +127,7 @@ Seal fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`) are 
 
 ## Step 7: Conformance Testing
 
-Run your implementation against all 15 fixtures in [`conformance/fixtures.json`](../conformance/fixtures.json):
+Run your implementation against all 16 fixtures in [`conformance/fixtures.json`](../conformance/fixtures.json):
 
 ```
 for each fixture:
@@ -142,7 +142,33 @@ for each fixture:
     assert actual_hash == expect_hash   # hash matches
 ```
 
-If all 15 pass, your implementation is conformant.
+If all 16 pass, your implementation is conformant.
+
+---
+
+## Step 8: URI Parsing (Optional)
+
+Implementations may include a parser for `capsule://` URIs (see [`spec/uri-scheme.md`](../spec/uri-scheme.md)). A conformant URI parser must handle four forms:
+
+| Form | Example | Key Fields |
+|---|---|---|
+| **Hash reference** | `capsule://sha3_<64hex>` | `reference_type: "hash"`, `hash_algorithm: "sha3"`, `hash_value` |
+| **Chain + sequence** | `capsule://deploy-bot/42` | `chain`, `reference_type: "sequence"`, `sequence` |
+| **Chain + hash** | `capsule://deploy-bot/sha3_<64hex>` | `chain`, `reference_type: "hash"`, `hash_value` |
+| **ID reference** | `capsule://<uuid>` | `reference_type: "id"`, `id` |
+
+All forms support optional fragments (`#reasoning`, `#execution/tool_calls/0`) using JSON Pointer syntax.
+
+### Validation rules
+
+- `sha3_` prefix must be followed by exactly 64 lowercase hex characters (`[0-9a-f]{64}`)
+- Reject unknown hash algorithm prefixes
+- Fragment paths must conform to the 6-section structure; reject path traversal attempts
+- Sequence numbers must be non-negative integers
+
+### Testing
+
+Validate against [`conformance/uri-fixtures.json`](../conformance/uri-fixtures.json), which provides valid URIs with expected parse results and invalid URIs that must be rejected.
 
 ---
 

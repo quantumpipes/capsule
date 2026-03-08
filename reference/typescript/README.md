@@ -1,6 +1,6 @@
 # Capsule Protocol — TypeScript Reference Implementation
 
-> **Status**: Conformant — 15/15 golden fixtures passing, 101 tests, 100% coverage
+> **Status**: Conformant — 16/16 golden fixtures passing, 101 tests, 100% coverage
 
 TypeScript reference implementation of the [Capsule Protocol Specification (CPS)](../../spec/). Create, seal, verify, and chain Capsules in TypeScript/JavaScript.
 
@@ -91,7 +91,7 @@ Both are audited, zero-dependency, pure-JS implementations by Paul Miller.
 
 ## Conformance
 
-This implementation passes all 15 golden test vectors from [`conformance/fixtures.json`](../../conformance/fixtures.json).
+This implementation passes all 16 golden test vectors from [`conformance/fixtures.json`](../../conformance/fixtures.json).
 
 ```bash
 npm test    # 101 tests: 47 conformance + 22 canonical + 15 capsule + 11 seal + 6 chain
