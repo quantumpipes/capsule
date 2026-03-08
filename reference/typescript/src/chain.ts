@@ -8,6 +8,8 @@
  */
 
 import type { Capsule } from "./capsule.js";
+import { toDict } from "./capsule.js";
+import { computeHash } from "./seal.js";
 
 export interface ChainVerificationResult {
   valid: boolean;
@@ -16,17 +18,31 @@ export interface ChainVerificationResult {
   capsules_verified: number;
 }
 
+export interface ChainVerifyOptions {
+  /** Recompute SHA3-256 from content and compare to stored hash. */
+  verifyContent?: boolean;
+}
+
 /**
  * Verify the integrity of a Capsule chain.
  *
- * Checks (per CPS Section 4):
+ * Structural checks (always):
  * 1. Sequence numbers are consecutive (0, 1, 2, ...)
  * 2. Each Capsule's previous_hash matches the prior Capsule's hash
  * 3. Genesis Capsule (sequence 0) has previous_hash = null
  *
+ * Cryptographic check (when verifyContent is true):
+ * 4. Recompute SHA3-256 from content and compare to stored hash
+ *
  * @param capsules Array of Capsules sorted by sequence (ascending)
+ * @param options Optional verification options
  */
-export function verifyChain(capsules: Capsule[]): ChainVerificationResult {
+export function verifyChain(
+  capsules: Capsule[],
+  options?: ChainVerifyOptions,
+): ChainVerificationResult {
+  const verifyContent = options?.verifyContent ?? false;
+
   if (capsules.length === 0) {
     return { valid: true, error: null, broken_at: null, capsules_verified: 0 };
   }
@@ -58,6 +74,18 @@ export function verifyChain(capsules: Capsule[]): ChainVerificationResult {
         return {
           valid: false,
           error: `Chain broken: previous_hash mismatch at sequence ${i}`,
+          broken_at: capsule.id,
+          capsules_verified: i,
+        };
+      }
+    }
+
+    if (verifyContent) {
+      const computed = computeHash(toDict(capsule));
+      if (computed !== capsule.hash) {
+        return {
+          valid: false,
+          error: `Content hash mismatch at sequence ${i}: stored hash does not match recomputed hash`,
           broken_at: capsule.id,
           capsules_verified: i,
         };

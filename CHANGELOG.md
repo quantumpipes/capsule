@@ -13,7 +13,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.2.0] - 2026-03-08
 
-Protocol-first restructure, TypeScript implementation, finalized URI scheme, and full CapsuleType conformance.
+Protocol-first restructure, TypeScript implementation, finalized URI scheme, full CapsuleType conformance, Security Considerations in spec, cryptographic chain verification, and 11-framework compliance directory.
 
 ### Changed
 
@@ -24,18 +24,29 @@ Protocol-first restructure, TypeScript implementation, finalized URI scheme, and
   - Protocol documentation at `docs/` (language-agnostic)
   - Python-specific docs at `reference/python/docs/`
   - No `pyproject.toml` at repo root — the repo is a protocol, not a package
+- **Compliance restructured into per-framework directory** — `docs/compliance.md` replaced by `docs/compliance/` with individual documents per framework and a README index.
 
 ### Added
 
-- **`capsule://` URI scheme (Active)** — content-addressable references to Capsule records via their SHA3-256 hash. Spec at `spec/uri-scheme.md`, finalized from Draft to Active. Supports hash references (`capsule://sha3_<hash>`), chain references (`capsule://chain/42`), ID references, and fragment syntax into the 6 sections. Includes URI conformance vectors at `conformance/uri-fixtures.json`.
-- **TypeScript reference implementation** — full CPS-conformant implementation at `reference/typescript/`: Capsule model with factories, canonical JSON serializer (CPS Section 2 with float-path handling), SHA3-256 hashing, Ed25519 seal/verify, and chain verification. Passes all 16 golden fixtures. 101 tests, 100% coverage (v8). Uses `@noble/hashes` ^2.0.1, `@noble/ed25519` ^3.0.0, vitest ^4.0.0, TypeScript ^5.9.0. Node.js >= 20.19.0.
-- **Implementor's Guide** (`docs/implementors-guide.md`) — step-by-step instructions for building a conformant CPS implementation in any language, with language-specific pitfalls for TypeScript, Go, and Rust.
-- **Why Capsules** (`docs/why-capsules.md`) — the case for cryptographic AI memory, aimed at decision-makers and architects.
-- **URI scheme security considerations** — `spec/uri-scheme.md` includes: URI injection validation, resolution trust model, denial-of-service mitigations, fragment path traversal safety, no ambient authority principle.
+- **Security Considerations in CPS spec** (`spec/README.md` Section 7) — documents what CPS provides (integrity, authenticity, non-repudiation, ordering, quantum resistance) and what it does not (confidentiality, truthfulness, availability, identity binding). Covers signer key compromise, chain truncation, verification levels, replay, and timestamp trust.
+- **Cryptographic chain verification** — `chain.verify(verify_content=True)` recomputes SHA3-256 from content and compares to stored hash. `chain.verify(seal=seal_instance)` also verifies Ed25519 signatures. Both Python and TypeScript implementations. Default structural-only behavior is unchanged (backward compatible).
+- **11-framework compliance directory** (`docs/compliance/`) — per-framework regulatory mappings: NIST SP 800-53, NIST AI RMF, EU AI Act, SOC 2, ISO 27001, HIPAA, GDPR, PCI DSS, FedRAMP, FINRA, CMMC. Each document maps protocol-level capabilities to specific controls and lists complementary controls outside the protocol's scope.
+- **NIST RFI submission archive** (`nist-submission/`) — exact artifacts submitted to NIST (Docket NIST-2025-0035), SHA-256 checksums, and README with normative/informative classification.
+- **`capsule://` URI scheme (Active)** — content-addressable references to Capsule records via their SHA3-256 hash. Spec at `spec/uri-scheme.md`, finalized from Draft to Active. Supports hash references (`capsule://sha3_<hash>`), chain references (`capsule://chain/42`), ID references, and fragment syntax into the 6 sections.
 - **URI conformance vectors** (`conformance/uri-fixtures.json`) — 10 valid and 11 invalid URI parsing test vectors for cross-language URI parser verification.
+- **TypeScript reference implementation** — full CPS-conformant implementation at `reference/typescript/`: Capsule model with factories, canonical JSON serializer (CPS Section 2 with float-path handling), SHA3-256 hashing, Ed25519 seal/verify, and chain verification with `verifyContent` option. Passes all 16 golden fixtures. 101 tests, 100% coverage (v8). Uses `@noble/hashes` ^2.0.1, `@noble/ed25519` ^3.0.0, vitest ^4.0.0, TypeScript ^5.9.0. Node.js >= 20.19.0.
+- **TypeScript release workflow** (`.github/workflows/typescript-release.yaml`) — npm publish with provenance on version tags, gated by conformance tests.
 - **`vault` golden fixture** — conformance suite now covers all 8 CapsuleTypes (16 total fixtures, up from 15). The `vault_secret` fixture tests secret rotation with policy-based authority.
-- **Protocol structure tests** (`reference/python/tests/test_protocol_structure.py`) — guards the protocol-first layout, spec completeness, conformance suite integrity, TypeScript type alignment with spec, markdown link resolution, CI configuration, and root-level file requirements.
+- **Implementor's Guide** (`docs/implementors-guide.md`) — step-by-step instructions for building a conformant CPS implementation in any language, with URI parsing section and language-specific pitfalls.
+- **Why Capsules** (`docs/why-capsules.md`) — the case for cryptographic AI memory.
+- **Protocol structure tests** — guards the protocol-first layout, spec completeness (including Security Considerations), conformance suite integrity, URI vectors, compliance directory, TypeScript alignment, markdown links, CI configuration, and root-level files.
 - **Dependabot for TypeScript** — npm dependency updates for `reference/typescript/`.
+
+### Security
+
+- `chain.verify()` now supports cryptographic verification (`verify_content=True`, `seal=`) in addition to structural-only checks. Structural verification alone trusts stored hash values; cryptographic verification recomputes from content.
+- Hash computation in chain verification uses the canonical `compute_hash()` function (Python) and `computeHash(toDict())` (TypeScript) to prevent divergence from the sealing path.
+- Spec Section 7 explicitly documents non-goals: no confidentiality, no content truthfulness, no availability guarantees, no identity binding.
 
 ### Updated
 

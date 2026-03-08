@@ -185,6 +185,190 @@ class TestChainVerification:
         assert "gap" in result.error.lower() or "Sequence" in result.error
 
 
+class TestChainCryptographicVerification:
+    """Test chain verification with content hash recomputation and signature checks."""
+
+    @pytest.mark.asyncio
+    async def test_verify_content_passes_for_valid_chain(self, chain, seal, storage):
+        """verify_content=True passes when content matches stored hashes."""
+        for i in range(3):
+            capsule = create_capsule(f"capsule_{i}")
+            capsule = await chain.add(capsule)
+            seal.seal(capsule)
+            await storage.store(capsule)
+
+        result = await chain.verify(verify_content=True)
+
+        assert result.valid is True
+        assert result.capsules_verified == 3
+
+    @pytest.mark.asyncio
+    async def test_verify_content_detects_tampered_content(self, chain, seal, storage):
+        """verify_content=True catches content modified after sealing."""
+        capsule = create_capsule("original")
+        capsule = await chain.add(capsule)
+        seal.seal(capsule)
+        await storage.store(capsule)
+
+        stored = (await storage.get_all_ordered())[0]
+        stored.trigger.request = "tampered"
+
+        result = await chain.verify(verify_content=True)
+
+        assert result.valid is False
+        assert "hash mismatch" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_verify_with_seal_passes_for_valid_chain(self, chain, seal, storage):
+        """Passing seal= verifies signatures on each capsule."""
+        for i in range(3):
+            capsule = create_capsule(f"capsule_{i}")
+            capsule = await chain.add(capsule)
+            seal.seal(capsule)
+            await storage.store(capsule)
+
+        result = await chain.verify(seal=seal)
+
+        assert result.valid is True
+        assert result.capsules_verified == 3
+
+    @pytest.mark.asyncio
+    async def test_verify_with_seal_detects_bad_signature(self, chain, seal, storage):
+        """Passing seal= catches forged signatures."""
+        capsule = create_capsule("test")
+        capsule = await chain.add(capsule)
+        seal.seal(capsule)
+        capsule.signature = "00" * 64
+        await storage.store(capsule)
+
+        result = await chain.verify(seal=seal)
+
+        assert result.valid is False
+        assert "Signature verification failed" in result.error
+
+    @pytest.mark.asyncio
+    async def test_structural_only_misses_content_tampering(self, chain, seal, storage):
+        """Default (structural-only) verification does NOT catch content tampering."""
+        capsule = create_capsule("original")
+        capsule = await chain.add(capsule)
+        seal.seal(capsule)
+        await storage.store(capsule)
+
+        stored = (await storage.get_all_ordered())[0]
+        stored.trigger.request = "tampered"
+
+        result = await chain.verify()
+
+        assert result.valid is True, (
+            "Structural verification should not catch content tampering "
+            "(this is why verify_content=True exists)"
+        )
+
+    @pytest.mark.asyncio
+    async def test_seal_implies_verify_content(self, chain, seal, storage):
+        """Passing seal= implies verify_content=True."""
+        capsule = create_capsule("original")
+        capsule = await chain.add(capsule)
+        seal.seal(capsule)
+        await storage.store(capsule)
+
+        stored = (await storage.get_all_ordered())[0]
+        stored.trigger.request = "tampered"
+
+        result = await chain.verify(seal=seal)
+
+        assert result.valid is False
+        assert "hash mismatch" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_empty_chain_with_verify_content(self, chain):
+        """Empty chain is valid even with verify_content=True."""
+        result = await chain.verify(verify_content=True)
+
+        assert result.valid is True
+        assert result.capsules_verified == 0
+
+    @pytest.mark.asyncio
+    async def test_single_capsule_with_verify_content(self, chain, seal, storage):
+        """Single capsule chain passes cryptographic verification."""
+        capsule = create_capsule("solo")
+        capsule = await chain.add(capsule)
+        seal.seal(capsule)
+        await storage.store(capsule)
+
+        result = await chain.verify(verify_content=True)
+
+        assert result.valid is True
+        assert result.capsules_verified == 1
+
+    @pytest.mark.asyncio
+    async def test_tamper_in_middle_of_chain(self, chain, seal, storage):
+        """Tampering in the middle of the chain is caught by verify_content."""
+        for i in range(5):
+            capsule = create_capsule(f"capsule_{i}")
+            capsule = await chain.add(capsule)
+            seal.seal(capsule)
+            await storage.store(capsule)
+
+        all_capsules = await storage.get_all_ordered()
+        all_capsules[2].trigger.request = "tampered_middle"
+
+        result = await chain.verify(verify_content=True)
+
+        assert result.valid is False
+        assert result.capsules_verified == 2
+        assert "hash mismatch" in result.error.lower()
+
+    @pytest.mark.asyncio
+    async def test_default_verify_is_backward_compatible(self, chain, seal, storage):
+        """Default verify() with no new params behaves identically to original."""
+        for i in range(3):
+            capsule = create_capsule(f"capsule_{i}")
+            capsule = await chain.add(capsule)
+            seal.seal(capsule)
+            await storage.store(capsule)
+
+        result = await chain.verify()
+
+        assert result.valid is True
+        assert result.capsules_verified == 3
+        assert result.error is None
+        assert result.broken_at is None
+
+    @pytest.mark.asyncio
+    async def test_verify_content_reports_correct_broken_at(self, chain, seal, storage):
+        """verify_content reports the ID of the tampered capsule."""
+        for i in range(3):
+            capsule = create_capsule(f"capsule_{i}")
+            capsule = await chain.add(capsule)
+            seal.seal(capsule)
+            await storage.store(capsule)
+
+        all_capsules = await storage.get_all_ordered()
+        tampered_id = str(all_capsules[1].id)
+        all_capsules[1].trigger.request = "tampered"
+
+        result = await chain.verify(verify_content=True)
+
+        assert result.valid is False
+        assert result.broken_at == tampered_id
+
+    @pytest.mark.asyncio
+    async def test_verify_content_false_is_structural_only(self, chain, seal, storage):
+        """Explicitly passing verify_content=False skips hash recomputation."""
+        capsule = create_capsule("original")
+        capsule = await chain.add(capsule)
+        seal.seal(capsule)
+        await storage.store(capsule)
+
+        stored = (await storage.get_all_ordered())[0]
+        stored.trigger.request = "tampered"
+
+        result = await chain.verify(verify_content=False)
+
+        assert result.valid is True
+
+
 class TestChainOperations:
     """Test chain utility operations."""
 

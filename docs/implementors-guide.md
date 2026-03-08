@@ -116,12 +116,27 @@ Seal fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`) are 
 
 ## Step 6: Chain Verification
 
+Implementations SHOULD support two verification levels (see [CPS Section 7.5](../spec/README.md)):
+
+**Structural** (fast):
+
 ```
 1. Load all Capsules in sequence order
 2. Verify sequence numbers are consecutive: 0, 1, 2, ...
 3. Verify genesis (sequence 0) has previous_hash = null
 4. For each subsequent Capsule, verify previous_hash = hash of previous Capsule
 ```
+
+**Cryptographic** (thorough):
+
+```
+All structural checks, plus:
+5. For each Capsule, recompute SHA3-256 from content via to_dict() + canonicalize()
+6. Compare recomputed hash to stored hash (detects storage-level tampering)
+7. Optionally verify Ed25519 signature on each Capsule
+```
+
+Structural verification trusts stored hash values. Cryptographic verification catches content tampering where the attacker does not have the signing key.
 
 ---
 
