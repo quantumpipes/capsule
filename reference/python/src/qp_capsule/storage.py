@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Integer, String, Text, desc, func, select
@@ -80,15 +81,17 @@ class CapsuleStorage:
         capsules = await storage.list(limit=10)
     """
 
-    def __init__(self, db_path: Path | None = None):
+    def __init__(self, db_path: Path | None = None, **engine_kwargs: Any):
         """
         Initialize storage.
 
         Args:
             db_path: Path to SQLite database file.
                      Defaults to $QUANTUMPIPES_DATA_DIR/capsules.db or ~/.quantumpipes/capsules.db
+            **engine_kwargs: Forwarded to ``create_async_engine`` (e.g. ``poolclass``).
         """
         self.db_path = db_path or default_db_path()
+        self._engine_kwargs = engine_kwargs
         self._engine: AsyncEngine | None = None
         self._session_factory: async_sessionmaker[AsyncSession] | None = None
 
@@ -106,6 +109,7 @@ class CapsuleStorage:
             self._engine = create_async_engine(
                 f"sqlite+aiosqlite:///{self.db_path}",
                 echo=False,
+                **self._engine_kwargs,
             )
 
             async with self._engine.begin() as conn:

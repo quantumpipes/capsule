@@ -708,7 +708,7 @@ class TestCIConfiguration:
 
     def test_typescript_release_triggers_on_tags(self):
         text = (REPO_ROOT / ".github" / "workflows" / "typescript-release.yaml").read_text()
-        assert '"v*"' in text, "TypeScript release must trigger on version tags"
+        assert '"ts-v*"' in text, "TypeScript release must trigger on version tags"
 
     def test_typescript_release_runs_conformance(self):
         text = (REPO_ROOT / ".github" / "workflows" / "typescript-release.yaml").read_text()
