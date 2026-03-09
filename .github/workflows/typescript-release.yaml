@@ -3,7 +3,7 @@ name: TypeScript Release
 on:
   push:
     tags:
-      - "v*"
+      - "ts-v*"
 
 permissions:
   contents: read
@@ -67,7 +67,7 @@ jobs:
       - run: npx tsc
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/ts-v}" >> $GITHUB_OUTPUT
       - name: Set package version
         run: npm version ${{ steps.version.outputs.VERSION }} --no-git-tag-version
       - run: npm publish --provenance --access public
