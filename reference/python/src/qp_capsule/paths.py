@@ -49,6 +49,14 @@ def default_key_path() -> Path:
     return Path.home() / ".quantumpipes" / "key"
 
 
+def default_keyring_path() -> Path:
+    """Get default keyring path from environment or home directory."""
+    data_dir = os.environ.get("QUANTUMPIPES_DATA_DIR")
+    if data_dir:
+        return resolve_data_dir(data_dir) / "keyring.json"
+    return Path.home() / ".quantumpipes" / "keyring.json"
+
+
 def default_db_path() -> Path:
     """Get default database path from environment or home directory."""
     data_dir = os.environ.get("QUANTUMPIPES_DATA_DIR")

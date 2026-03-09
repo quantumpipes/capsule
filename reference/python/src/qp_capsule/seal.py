@@ -47,6 +47,7 @@ from qp_capsule.paths import default_key_path
 
 if TYPE_CHECKING:
     from qp_capsule.capsule import Capsule
+    from qp_capsule.keyring import Keyring
 
 # Optional post-quantum cryptography (FIPS 204 ML-DSA-65).
 # Available when installed with: pip install qp-capsule[pq]
@@ -76,7 +77,13 @@ class Seal:
         - Permissions restricted to owner (0o600)
     """
 
-    def __init__(self, key_path: Path | None = None, enable_pq: bool | None = None):
+    def __init__(
+        self,
+        key_path: Path | None = None,
+        enable_pq: bool | None = None,
+        *,
+        keyring: Keyring | None = None,
+    ):
         """
         Initialize the Seal.
 
@@ -87,10 +94,14 @@ class Seal:
                        None = auto-detect (use if oqs library is available)
                        True = require PQ (raises if unavailable)
                        False = disable PQ even if available
+            keyring: Optional Keyring for epoch-aware verification.
+                     When provided, verify() uses the capsule's signed_by
+                     fingerprint to look up the correct epoch's public key.
         """
         self.key_path = key_path or default_key_path()
         self._signing_key: SigningKey | None = None
         self._verify_key: VerifyKey | None = None
+        self._keyring = keyring
 
         # PQ state
         self._pq_secret_key: bytes | None = None
@@ -123,6 +134,7 @@ class Seal:
             - Generated with secure random if not exists
             - Stored with restricted permissions (owner only)
             - Loaded from disk on subsequent calls
+            - Registered with keyring on first load (if keyring provided)
 
         Security:
             - Uses umask to ensure file is created with 0o600 permissions
@@ -151,6 +163,9 @@ class Seal:
                 self.key_path.chmod(0o600)
 
             self._verify_key = self._signing_key.verify_key
+
+            if self._keyring is not None:
+                self._keyring.register_key(self._signing_key)
 
         if self._verify_key is None:
             raise SealError("Verify key not initialized")
@@ -230,9 +245,13 @@ class Seal:
         """
         Get a short fingerprint of the public key.
 
-        Returns:
-            First 16 characters of hex-encoded public key
+        Returns the keyring's ``qp_key_XXXX`` format when a keyring is
+        available, otherwise falls back to the legacy 16-char hex prefix.
         """
+        if self._keyring is not None:
+            active = self._keyring.get_active()
+            if active is not None:
+                return active.fingerprint
         return self.get_public_key()[:16]
 
     def seal(self, capsule: Capsule) -> Capsule:
@@ -338,8 +357,12 @@ class Seal:
             1. Check Capsule is sealed (Ed25519 required, PQ depends on mode)
             2. Recompute hash from content
             3. Verify hash matches stored hash
-            4. Verify Ed25519 signature (always)
+            4. Verify Ed25519 signature (epoch-aware via keyring, or local key)
             5. Verify post-quantum signature (if requested and present)
+
+        When a keyring is configured, the capsule's ``signed_by`` fingerprint
+        is used to look up the correct epoch's public key. This enables
+        verification of capsules signed across key rotations.
 
         Args:
             capsule: The Capsule to verify
@@ -348,7 +371,6 @@ class Seal:
         Returns:
             True if seal is valid, False otherwise
         """
-        # Check Capsule is sealed
         if not capsule.is_sealed():
             return False
 
@@ -363,14 +385,23 @@ class Seal:
             if computed_hash != capsule.hash:
                 return False
 
-            # 3. Verify Ed25519 signature (required)
-            _, verify_key = self._ensure_keys()
-            verify_key.verify(
+            # 3. Determine verification key (keyring lookup or local key)
+            resolve_key: VerifyKey | None = None
+            if self._keyring is not None and capsule.signed_by:
+                pub_hex = self._keyring.lookup_public_key(capsule.signed_by)
+                if pub_hex is not None:
+                    resolve_key = VerifyKey(bytes.fromhex(pub_hex))
+
+            if resolve_key is None:
+                _, resolve_key = self._ensure_keys()
+
+            # 4. Verify Ed25519 signature
+            resolve_key.verify(
                 capsule.hash.encode("utf-8"),
                 bytes.fromhex(capsule.signature),
             )
 
-            # 4. Verify post-quantum signature (if requested and present)
+            # 5. Verify post-quantum signature (if requested and present)
             if verify_pq and capsule.signature_pq:
                 return self._verify_dilithium(capsule.hash, capsule.signature_pq)
 

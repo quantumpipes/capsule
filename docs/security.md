@@ -1,7 +1,7 @@
 ---
 title: "Security Evaluation Guide"
 description: "Security evaluation guide for CISOs and security teams assessing Capsule for organizational adoption. Covers cryptographic architecture, key management, tamper evidence, attack surface, and deployment."
-date_modified: "2026-03-07"
+date_modified: "2026-03-09"
 classification: "Public"
 ai_context: |
   CISO-targeted security evaluation of the Capsule package. Covers two-tier
@@ -15,7 +15,7 @@ ai_context: |
 
 **For CISOs and Security Teams Evaluating Capsule**
 
-*Capsule v1.0.0 — March 2026*
+*Capsule v1.3.0 — March 2026*
 *Classification: Public*
 
 ---
@@ -93,12 +93,27 @@ Ed25519 is always required. ML-DSA-65 is additive, never a replacement. If one a
 
 ### Key Rotation
 
-Key rotation is currently a manual process:
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:226-271 -->
 
-1. Stop the application
-2. Move existing keys to backup
-3. Restart the application (new keys auto-generated)
-4. Previous Capsules remain verifiable using `seal.verify_with_key(capsule, old_public_key_hex)`
+Key rotation is automated through the epoch-based keyring system, aligned with NIST SP 800-57:
+
+```bash
+capsule keys rotate    # Generate new key, retire current, update keyring. No downtime.
+```
+
+Rotation protocol:
+
+1. Generate new Ed25519 key pair using cryptographically secure random
+2. Set current epoch's status to `retired` with timestamp
+3. Add new epoch as `active`
+4. Write new private key to disk (securely replaces old)
+5. Save keyring atomically (temp file + `os.replace`)
+
+**Backward compatibility:** After rotation, Capsules signed with previous keys continue to verify. The keyring retains all retired epochs' public keys. `Seal.verify()` uses the capsule's `signed_by` fingerprint to look up the correct epoch's public key automatically.
+
+**Migration:** Existing installations without a keyring file are migrated seamlessly. On first use, the Seal or CLI creates `keyring.json` with epoch 0 for the existing key. No manual intervention required.
+
+**Automated rotation:** Schedule `capsule keys rotate` via cron for periodic rotation (e.g., every 90 days).
 
 > **Note:** HSM integration is planned for a future release. File-based key storage is appropriate for development and single-tenant deployments. For multi-tenant production deployments, ensure key directories have appropriate OS-level access controls.
 
@@ -203,7 +218,7 @@ Use this checklist when evaluating Capsule for your organization:
 | Multi-tenant isolation | Yes | PostgreSQL backend with `tenant_id` scoping |
 | Test coverage | Yes | 100% line coverage enforced in CI (`fail_under = 100`) |
 | Warning-free | Yes | `filterwarnings = ["error"]` with zero exemptions |
-| Key rotation support | Partial | Manual rotation; `verify_with_key()` for old keys; HSM planned |
+| Key rotation support | Yes | Automated via `capsule keys rotate`; epoch-based keyring with backward-compatible verification; HSM planned |
 | FIPS 140-2/3 validated module | No | Uses FIPS-approved algorithms via PyNaCl/libsodium; module itself is not FIPS-validated |
 
 ---
@@ -217,4 +232,4 @@ Use this checklist when evaluating Capsule for your organization:
 
 ---
 
-*Capsule v1.0.0 — Quantum Pipes Technologies, LLC*
+*Capsule v1.3.0 — Quantum Pipes Technologies, LLC*

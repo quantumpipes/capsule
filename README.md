@@ -168,7 +168,7 @@ See more examples in [`examples/`](./examples/).
 
 | Language | Status | Install | Source |
 |---|---|---|---|
-| **Python** | v1.1.0 (stable) | `pip install qp-capsule` | [`reference/python/`](./reference/python/) |
+| **Python** | v1.3.0 (stable) | `pip install qp-capsule` | [`reference/python/`](./reference/python/) |
 | **TypeScript** | v0.0.1 (conformant, 16/16 fixtures) | `npm install @quantumpipes/capsule` | [`reference/typescript/`](./reference/typescript/) |
 | Go | Separate repo (planned) | — | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) |
 | Rust | Separate repo (planned) | — | [quantumpipes/capsule-rust](https://github.com/quantumpipes/capsule-rust) |
@@ -196,6 +196,22 @@ seal = Seal()
 seal.seal(capsule)
 assert seal.verify(capsule)
 ```
+
+### CLI
+
+The Python package includes a CLI for verification, inspection, and key management:
+
+```bash
+capsule verify chain.json                      # Structural verification
+capsule verify --full --db capsules.db         # + SHA3-256 recomputation
+capsule verify --signatures --json chain.json  # + Ed25519, JSON output
+capsule inspect --db capsules.db --seq 47      # Full 6-section display
+capsule keys info                              # Epoch history
+capsule keys rotate                            # Rotate to new key (no downtime)
+capsule hash document.pdf                      # SHA3-256 of any file
+```
+
+Exit codes: `0` = pass, `1` = fail, `2` = error. Designed for CI/CD gates: `capsule verify --quiet && deploy`.
 
 See the [Python reference documentation](./reference/python/) for the full guide.
 
@@ -260,6 +276,7 @@ See the [compliance overview](./docs/compliance/) for FIPS algorithm details and
 | [Compliance Mapping](./docs/compliance/) | Regulators, GRC |
 | [Why Capsules](./docs/why-capsules.md) | Decision-Makers, Architects |
 | [Implementor's Guide](./docs/implementors-guide.md) | SDK Authors |
+| [CLI Reference](./docs/architecture.md#cli) | DevOps, Auditors |
 
 ---
 

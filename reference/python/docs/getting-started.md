@@ -1,7 +1,7 @@
 ---
 title: "Getting Started with Capsule"
 description: "Create, seal, verify, and chain your first Capsule in under 60 seconds."
-date_modified: "2026-03-07"
+date_modified: "2026-03-09"
 ai_context: |
   Developer quickstart for the qp-capsule Python package. Covers install,
   creating a Capsule with 6 sections, sealing with Ed25519, verification,
@@ -240,6 +240,23 @@ await run_agent("Write a summary of Q1 results")
 The decorator handles Capsule creation, sealing, chaining, and storage automatically. If capsule creation fails, your function still works normally.
 
 See [High-Level API](./high-level-api.md) for the full guide.
+
+---
+
+## CLI (v1.3.0+)
+
+The package installs a `capsule` command for verification, inspection, and key management:
+
+```bash
+capsule verify chain.json                      # Structural verification
+capsule verify --full --db ~/.quantumpipes/capsules.db  # + SHA3-256
+capsule inspect --db capsules.db --seq 42      # Show capsule #42
+capsule keys info                              # Key epoch history
+capsule keys rotate                            # Rotate to new key
+capsule hash document.pdf                      # SHA3-256 of any file
+```
+
+Use `capsule verify --quiet && deploy` as a CI/CD gate. Exit code `0` means the chain is intact.
 
 ---
 
