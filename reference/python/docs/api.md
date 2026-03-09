@@ -1,14 +1,15 @@
 ---
 title: "API Reference"
 description: "Complete API reference for Capsule: every class, method, parameter, and type."
-date_modified: "2026-03-07"
+date_modified: "2026-03-09"
 ai_context: |
-  Complete Python API reference for the qp-capsule package v1.1.0. Covers Capsule model
-  (6 sections, 8 CapsuleTypes), Seal (seal, verify, verify_with_key, compute_hash),
+  Complete Python API reference for the qp-capsule package v1.3.0. Covers Capsule model
+  (6 sections, 8 CapsuleTypes), Seal (seal, verify, verify_with_key, compute_hash,
+  keyring integration), Keyring (epoch-based key rotation, NIST SP 800-57),
   CapsuleChain (add, verify, seal_and_store), CapsuleStorageProtocol (7 methods),
   CapsuleStorage (SQLite), PostgresCapsuleStorage (multi-tenant), exception hierarchy,
-  and the v1.1.0 high-level API: Capsules class, @audit() decorator, current() context
-  variable, and mount_capsules() FastAPI integration. All signatures verified against source.
+  CLI (verify, inspect, keys, hash), and the high-level API: Capsules class, @audit()
+  decorator, current() context variable, and mount_capsules() FastAPI integration.
 ---
 
 # API Reference
@@ -34,6 +35,9 @@ from qp_capsule import (
     # Cryptographic Seal
     Seal, compute_hash,
 
+    # Key Management (v1.3.0+)
+    Keyring, Epoch,
+
     # Storage Protocol
     CapsuleStorageProtocol,
 
@@ -45,7 +49,7 @@ from qp_capsule import (
     PostgresCapsuleStorage,   # PostgreSQL
 
     # Exceptions
-    CapsuleError, SealError, ChainError, StorageError,
+    CapsuleError, SealError, ChainError, StorageError, KeyringError,
 )
 
 # FastAPI Integration (optional, requires fastapi)
@@ -88,7 +92,7 @@ class Capsule:
     signature: str                    # Ed25519 signature (hex)
     signature_pq: str                 # ML-DSA-65 signature (hex, optional)
     signed_at: datetime | None        # When sealed (UTC)
-    signed_by: str                    # Key fingerprint (first 16 hex chars)
+    signed_by: str                    # Key fingerprint (qp_key_XXXX or legacy 16 hex chars)
 ```
 
 ### Methods
@@ -248,7 +252,7 @@ class CapsuleType(StrEnum):
 
 Cryptographic sealing with two-tier architecture.
 
-<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:68-81 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:80-104 -->
 
 ```python
 class Seal:
@@ -256,6 +260,8 @@ class Seal:
         self,
         key_path: Path | None = None,
         enable_pq: bool | None = None,
+        *,
+        keyring: Keyring | None = None,
     )
 ```
 
@@ -263,6 +269,7 @@ class Seal:
 |---|---|---|---|
 | `key_path` | `Path \| None` | `~/.quantumpipes/key` | Ed25519 private key file path |
 | `enable_pq` | `bool \| None` | `None` (auto-detect) | `None` = use ML-DSA-65 if available; `True` = require; `False` = disable |
+| `keyring` | `Keyring \| None` | `None` | Keyring for epoch-aware verification. When provided, `verify()` uses the capsule's `signed_by` fingerprint to resolve the correct epoch's public key. |
 
 ### Properties
 
@@ -276,7 +283,7 @@ class Seal:
 Seal a Capsule. Fills `hash`, `signature`, `signature_pq` (if PQ enabled), `signed_at`, `signed_by`. Raises `SealError` on failure.
 
 **`verify(capsule: Capsule, verify_pq: bool = False) -> bool`**
-Verify a sealed Capsule. Returns `True` if hash and Ed25519 signature are valid. Set `verify_pq=True` to also verify the ML-DSA-65 signature.
+Verify a sealed Capsule. Returns `True` if hash and Ed25519 signature are valid. When a `keyring` was provided at construction, the capsule's `signed_by` fingerprint is used to look up the correct epoch's public key, enabling verification across key rotations. Set `verify_pq=True` to also verify the ML-DSA-65 signature.
 
 **`verify_with_key(capsule: Capsule, public_key_hex: str) -> bool`**
 Verify a Capsule using a specific Ed25519 public key (hex-encoded). Useful for verifying Capsules sealed by other instances.
@@ -285,7 +292,7 @@ Verify a Capsule using a specific Ed25519 public key (hex-encoded). Useful for v
 Returns the Ed25519 public key as a 64-character hex string.
 
 **`get_key_fingerprint() -> str`**
-Returns the first 16 characters of the hex-encoded public key.
+Returns the keyring's `qp_key_XXXX` format when a keyring is available with an active epoch, otherwise falls back to the first 16 characters of the hex-encoded public key (legacy format).
 
 ### compute_hash
 
@@ -296,6 +303,85 @@ def compute_hash(data: dict) -> str
 ```
 
 Standalone SHA3-256 hash of a dictionary. Uses canonical JSON (sorted keys, compact separators). Returns 64-character hex string.
+
+---
+
+## Keyring
+
+> **Added in v1.3.0.**
+
+Epoch-based key lifecycle manager aligned with NIST SP 800-57.
+
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:82-116 -->
+
+```python
+class Keyring:
+    def __init__(
+        self,
+        keyring_path: Path | None = None,
+        key_path: Path | None = None,
+    )
+```
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `keyring_path` | `Path \| None` | `~/.quantumpipes/keyring.json` | Path to keyring file |
+| `key_path` | `Path \| None` | `~/.quantumpipes/key` | Path to Ed25519 private key |
+
+On first access, loads from disk. If a key file exists but no keyring file, migrates automatically by creating epoch 0 for the existing key.
+
+### Properties
+
+| Property | Type | Description |
+|---|---|---|
+| `path` | `Path` | Path to the keyring file |
+| `key_path` | `Path` | Path to the Ed25519 private key file |
+| `active_epoch` | `int` | Current active epoch number |
+| `epochs` | `list[Epoch]` | All epochs (returns a copy) |
+
+### Methods
+
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:220-341 -->
+
+**`load() -> None`**
+Load keyring from disk, migrating from existing key files if needed.
+
+**`get_active() -> Epoch | None`**
+Get the active epoch, or `None` if no epochs exist.
+
+**`lookup(fingerprint: str) -> Epoch | None`**
+Look up an epoch by fingerprint. Matches on the `qp_key_XXXX` format and on the legacy 16-char hex prefix.
+
+**`lookup_public_key(fingerprint: str) -> str | None`**
+Look up a public key hex string by fingerprint.
+
+**`rotate() -> Epoch`**
+Rotate to a new key pair. Retires the current epoch, generates a new Ed25519 key, writes keyring atomically.
+
+**`register_key(signing_key: SigningKey) -> Epoch`**
+Register an existing key in the keyring. Idempotent. Called by `Seal` when generating a key for a keyring that does not yet track it.
+
+**`export_public_key() -> str | None`**
+Export the active epoch's public key as a hex string.
+
+**`to_dict() -> dict[str, Any]`**
+Serialize keyring to dict.
+
+### Epoch
+
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:46-79 -->
+
+```python
+@dataclass
+class Epoch:
+    epoch: int                # Epoch number (0-indexed)
+    algorithm: str            # "ed25519"
+    public_key_hex: str       # 64-char hex public key
+    fingerprint: str          # "qp_key_XXXX"
+    created_at: str           # ISO 8601 timestamp
+    rotated_at: str | None    # ISO 8601 timestamp (None if active)
+    status: str               # "active" or "retired"
+```
 
 ---
 
@@ -423,13 +509,14 @@ The `list()` and `count()` methods accept extra parameters beyond the Protocol:
 
 ## Exceptions
 
-<!-- VERIFIED: reference/python/src/qp_capsule/exceptions.py:12-25 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/exceptions.py:12-29 -->
 
 ```
 CapsuleError            Base exception for all Capsule operations
 ├── SealError           Sealing or verification failed
 ├── ChainError          Hash chain integrity error
-└── StorageError        Storage operation failed (e.g., storing unsealed Capsule)
+├── StorageError        Storage operation failed (e.g., storing unsealed Capsule)
+└── KeyringError        Keyring operation failed (load, save, rotate, lookup)
 ```
 
 All inherit from `CapsuleError`. Catch `CapsuleError` for unified error handling.
@@ -606,6 +693,36 @@ mount_capsules(app, capsules, prefix="/api/v1/capsules")
 FastAPI is not a hard dependency. Raises `CapsuleError` if not installed.
 
 **Security note:** These endpoints are read-only and do not add authentication. Protect them with your application's auth middleware in production.
+
+---
+
+## CLI
+
+> **Added in v1.3.0.**
+
+The `capsule` command is installed automatically with the package.
+
+<!-- VERIFIED: reference/python/src/qp_capsule/cli.py:551-598 -->
+
+```bash
+capsule verify chain.json                     # Structural (sequence + hash linkage)
+capsule verify --full --db capsules.db        # + SHA3-256 recomputation
+capsule verify --signatures chain.json        # + Ed25519 via keyring
+capsule verify --json chain.json              # Machine-readable JSON
+capsule verify --quiet chain.json             # Exit code only (CI/CD gates)
+
+capsule inspect --db capsules.db --seq 47     # Full 6-section display
+capsule inspect --db capsules.db --id <uuid>  # Lookup by capsule ID
+capsule inspect capsule.json                  # From exported JSON
+
+capsule keys info                             # Epoch history and active key
+capsule keys rotate                           # Rotate to new epoch (no downtime)
+capsule keys export-public                    # Export active public key (hex)
+
+capsule hash document.pdf                     # SHA3-256 of any file
+```
+
+Exit codes: `0` = pass, `1` = fail, `2` = error.
 
 ---
 

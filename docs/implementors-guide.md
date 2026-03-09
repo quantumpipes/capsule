@@ -187,6 +187,58 @@ Validate against [`conformance/uri-fixtures.json`](../conformance/uri-fixtures.j
 
 ---
 
+## Step 9: Key Management (Recommended)
+
+Implementations SHOULD support epoch-based key rotation per [CPS Section 8](../spec/README.md#8-key-management-recommendations).
+
+### Keyring
+
+Maintain a keyring that maps fingerprints to public keys across rotation epochs. The Python reference uses `~/.quantumpipes/keyring.json`:
+
+```json
+{
+  "version": 1,
+  "active_epoch": 1,
+  "epochs": [
+    { "epoch": 0, "algorithm": "ed25519", "public_key_hex": "...", "fingerprint": "qp_key_a7f3", "status": "retired" },
+    { "epoch": 1, "algorithm": "ed25519", "public_key_hex": "...", "fingerprint": "qp_key_8b1d", "status": "active" }
+  ]
+}
+```
+
+### Epoch-Aware Verification
+
+When verifying a sealed Capsule:
+
+```
+1. Read capsule.signed_by fingerprint
+2. Look up fingerprint in keyring → find epoch → get public_key_hex
+3. Verify Ed25519 signature with the resolved key
+4. If fingerprint not found, fall back to the local active key
+```
+
+This enables verification of Capsules signed across key rotations without manual key management.
+
+### Rotation Protocol
+
+```
+1. Generate new Ed25519 key pair
+2. Set current epoch status to "retired" with rotated_at timestamp
+3. Add new epoch with status "active"
+4. Securely overwrite old private key with new
+5. Save keyring atomically (temp file + rename)
+```
+
+### Migration
+
+On first use, if a key file exists but no keyring file, create the keyring with epoch 0 for the existing key. No user intervention required.
+
+### Fingerprints
+
+The Python reference uses `qp_key_XXXX` (first 4 hex characters of the public key). Implementations MAY use different formats but MUST ensure fingerprints are unique within a keyring. Legacy capsules may use a 16-character hex prefix as `signed_by`; the lookup function should match both formats.
+
+---
+
 ## Registering Your Implementation
 
 Once conformant, submit a PR to add your implementation to `reference/<language>/` and update the implementation matrix in [`reference/README.md`](../reference/README.md). See [CONTRIBUTING.md](../CONTRIBUTING.md) for details.
@@ -197,6 +249,6 @@ Once conformant, submit a PR to add your implementation to `reference/<language>
 
 - [CPS v1.0 Specification](../spec/) — The normative protocol spec
 - [Conformance Suite](../conformance/) — Golden test vectors
-- [Python Reference](../reference/python/) — Python implementation (conformant, 506 tests, 100% coverage)
+- [Python Reference](../reference/python/) — Python implementation (conformant, 668 tests, 100% coverage)
 - [TypeScript Reference](../reference/typescript/) — TypeScript implementation (conformant, 101 tests, 100% coverage)
 - [URI Scheme](../spec/uri-scheme.md) — Content-addressable references

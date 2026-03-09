@@ -224,6 +224,130 @@ class TestPublicKey:
             assert other_seal.verify_with_key(sample_capsule, public_key) is True
 
 
+class TestSealKeyringIntegration:
+    """Test Seal behavior when configured with a Keyring."""
+
+    def test_seal_uses_keyring_fingerprint_format(self, temp_key_path):
+        """Capsules sealed with a keyring get the qp_key_XXXX format."""
+        from qp_capsule.keyring import Keyring
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        s = Seal(key_path=temp_key_path, keyring=kr)
+        capsule = Capsule(trigger=TriggerSection(type="test", source="t", request="r"))
+        s.seal(capsule)
+
+        assert capsule.signed_by.startswith("qp_key_")
+
+    def test_fingerprint_falls_back_when_keyring_has_no_active(self, temp_key_path):
+        """get_key_fingerprint falls back to 16-char hex when keyring has no active epoch."""
+        from qp_capsule.keyring import Keyring
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        s = Seal(key_path=temp_key_path, keyring=kr)
+        s.seal(Capsule())
+
+        kr._epochs[0].status = "retired"
+
+        fp = s.get_key_fingerprint()
+        assert not fp.startswith("qp_key_")
+        assert len(fp) == 16
+
+    def test_verify_falls_back_when_keyring_lookup_misses(self, temp_key_path):
+        """verify() falls back to local key when signed_by isn't in the keyring."""
+        from qp_capsule.keyring import Keyring
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        s = Seal(key_path=temp_key_path, keyring=kr)
+
+        capsule = Capsule(trigger=TriggerSection(type="test", source="t", request="r"))
+        s.seal(capsule)
+        capsule.signed_by = "unknown_fingerprint"
+
+        assert s.verify(capsule) is True
+
+    def test_verify_uses_keyring_for_old_epoch(self, temp_key_path):
+        """verify() resolves old-epoch key from keyring for capsules signed before rotation."""
+        from qp_capsule.keyring import Keyring
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        s = Seal(key_path=temp_key_path, keyring=kr)
+
+        capsule = Capsule(trigger=TriggerSection(type="test", source="t", request="r"))
+        s.seal(capsule)
+        old_fp = capsule.signed_by
+
+        kr.rotate()
+        s2 = Seal(key_path=temp_key_path, keyring=kr)
+
+        assert s2.verify(capsule) is True
+        assert capsule.signed_by == old_fp
+
+    def test_verify_with_empty_signed_by_falls_back(self, temp_key_path):
+        """verify() falls back to local key when capsule has empty signed_by."""
+        from qp_capsule.keyring import Keyring
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        s = Seal(key_path=temp_key_path, keyring=kr)
+
+        capsule = Capsule(trigger=TriggerSection(type="test", source="t", request="r"))
+        s.seal(capsule)
+        capsule.signed_by = ""
+
+        assert s.verify(capsule) is True
+
+    def test_ensure_keys_registers_with_keyring(self, temp_key_path):
+        """_ensure_keys() auto-registers the generated key in the keyring."""
+        from qp_capsule.keyring import Keyring
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        assert kr.epochs == []
+
+        s = Seal(key_path=temp_key_path, keyring=kr)
+        s.seal(Capsule())
+
+        assert len(kr.epochs) == 1
+        assert kr.epochs[0].status == "active"
+
+    def test_ensure_keys_with_existing_key_registers_once(self, temp_key_path):
+        """Loading an existing key also registers it, idempotently."""
+        from nacl.signing import SigningKey as SK
+
+        from qp_capsule.keyring import Keyring
+
+        sk = SK.generate()
+        temp_key_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_key_path.write_bytes(bytes(sk))
+
+        kr = Keyring(
+            keyring_path=temp_key_path.parent / "keyring.json",
+            key_path=temp_key_path,
+        )
+        s = Seal(key_path=temp_key_path, keyring=kr)
+        s.seal(Capsule())
+        s2 = Seal(key_path=temp_key_path, keyring=kr)
+        s2.seal(Capsule())
+
+        assert len(kr.epochs) == 1
+
+
 class TestComputeHash:
     """Test standalone hash function."""
 

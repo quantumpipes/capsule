@@ -11,6 +11,33 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.3.0] - 2026-03-09
+
+CLI verifier and epoch-based key rotation system.
+
+### Added
+
+- **`capsule` CLI** -- command-line tool for verification, inspection, and key management. Installed as a console script via `pip install qp-capsule`. Zero new dependencies (stdlib `argparse` + existing `pynacl`).
+  - `capsule verify <source>` -- verify chain integrity from JSON files (`chain.json`) or SQLite databases (`--db`). Three verification levels: `--structural` (default, sequence + previous_hash linkage), `--full` (+ SHA3-256 recomputation), `--signatures` (+ Ed25519 verification via keyring). Output modes: colored terminal (default), `--json` (machine-readable for policy engines and CI), `--quiet` (exit code only: 0=pass, 1=fail, 2=error).
+  - `capsule inspect` -- show a capsule's full 6-section content with seal metadata. Lookup by `--seq` or `--id` from JSON files or SQLite databases.
+  - `capsule keys info` -- display keyring metadata, epoch history, and capsule counts per epoch.
+  - `capsule keys rotate` -- generate new Ed25519 key pair, retire current key, update keyring. No downtime.
+  - `capsule keys export-public` -- export current public key for third-party verification.
+  - `capsule hash <file>` -- compute SHA3-256 of any file.
+- **Epoch-based key rotation** (`keyring.py`) -- automated key lifecycle management aligned with NIST SP 800-57. Keyring stored at `~/.quantumpipes/keyring.json` with atomic writes for crash safety. Supports backward-compatible verification across key rotations via fingerprint lookup. Seamless migration from existing single-key installations (auto-creates epoch 0 on first encounter).
+- **Epoch-aware signature verification** -- `Seal(keyring=kr)` uses the capsule's `signed_by` fingerprint to look up the correct epoch's public key from the keyring. Capsules signed with old keys continue to verify after rotation.
+- **`KeyringError` exception** -- dedicated exception for keyring operations (load, save, rotate, lookup).
+- **100+ new tests** -- keyring creation, migration, rotation, lookup, registration, export, atomic writes, edge cases. CLI verification (structural/full/signatures), inspection, key management, hash utility, ANSI color support, cross-rotation verification, seal+keyring integration. 100% code coverage maintained.
+
+### Security
+
+- Key rotation follows NIST SP 800-57 lifecycle: Generation, Active, Retired, Destroyed. Private keys are securely replaced on rotation (old key overwritten with new). Public keys are retained in the keyring for backward-compatible verification.
+- Keyring writes are atomic (temp file + `os.replace`) to prevent corruption on crash.
+- New `qp_key_XXXX` fingerprint format with backward-compatible lookup of legacy 16-char hex fingerprints.
+- `Seal.verify()` resolves the verification key from the keyring when available, falling back to the local key. No manual key management during verification.
+
+---
+
 ## [1.2.0] - 2026-03-08
 
 Protocol-first restructure, TypeScript implementation, finalized URI scheme, full CapsuleType conformance, Security Considerations in spec, cryptographic chain verification, and 11-framework compliance directory.
@@ -111,6 +138,7 @@ Initial public release of the Capsule Protocol Specification (CPS) v1.0 referenc
 
 ---
 
+[1.3.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.3.0
 [1.2.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.2.0
 [1.1.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.1.0
 [1.0.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.0.0

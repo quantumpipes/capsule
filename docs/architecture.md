@@ -1,7 +1,7 @@
 ---
 title: "Capsule Architecture"
 description: "Complete technical architecture of Capsule: the 6-section record model, cryptographic sealing, hash chain integrity, and storage backends."
-date_modified: "2026-03-07"
+date_modified: "2026-03-09"
 ai_context: |
   Full architecture of the Capsule system. Covers the 6-section Capsule model
   (Trigger, Context, Reasoning, Authority, Execution, Outcome), two-tier
@@ -207,17 +207,57 @@ If any step fails, `seal.verify()` returns `False`.
 
 ### Key Management
 
-<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:122-159, 161-222 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:129-172 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:82-213 -->
 
-| Key | Location | Permissions | Generated |
+| File | Location | Permissions | Purpose |
 |---|---|---|---|
-| Ed25519 private key | `~/.quantumpipes/key` | `0600` (owner only) | On first `seal()` call |
-| ML-DSA-65 secret key | `~/.quantumpipes/key.ml` | `0600` (owner only) | On first PQ `seal()` call |
-| ML-DSA-65 public key | `~/.quantumpipes/key.ml.pub` | `0644` (world-readable) | On first PQ `seal()` call |
+| Ed25519 private key | `~/.quantumpipes/key` | `0600` | Signing (active epoch only) |
+| Keyring | `~/.quantumpipes/keyring.json` | `0600` | Epoch history and public keys |
+| ML-DSA-65 secret key | `~/.quantumpipes/key.ml` | `0600` | Post-quantum signing |
+| ML-DSA-65 public key | `~/.quantumpipes/key.ml.pub` | `0644` | Post-quantum verification |
 
 Override the key directory with the `QUANTUMPIPES_DATA_DIR` environment variable or by passing `key_path` to the `Seal` constructor.
 
 Keys are generated using cryptographically secure random sources. File creation uses `umask(0o077)` to prevent race conditions between creation and permission setting.
+
+### Key Rotation and Epochs
+
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:226-271 -->
+
+Keys are managed through *epochs*. Each epoch tracks a single Ed25519 key pair with a lifecycle aligned to NIST SP 800-57:
+
+| Lifecycle Phase | Implementation |
+|---|---|
+| Generation | `capsule keys rotate` or auto-generate on first `seal()` |
+| Active | Current epoch, used for new capsules |
+| Retired | Old epoch, public key retained for verification only |
+| Destroyed | Private key securely overwritten on rotation |
+
+The keyring (`keyring.json`) stores the epoch history:
+
+```json
+{
+  "version": 1,
+  "active_epoch": 1,
+  "epochs": [
+    { "epoch": 0, "algorithm": "ed25519", "fingerprint": "qp_key_a7f3", "status": "retired" },
+    { "epoch": 1, "algorithm": "ed25519", "fingerprint": "qp_key_8b1d", "status": "active" }
+  ]
+}
+```
+
+**Rotation protocol:**
+
+1. Generate new Ed25519 key pair
+2. Set current epoch's status to `retired` with `rotated_at` timestamp
+3. Add new epoch with status `active`
+4. Write new private key (securely replaces old)
+5. Save keyring atomically (temp file + `os.replace`)
+
+**Backward-compatible verification:** `Seal.verify()` uses the capsule's `signed_by` fingerprint to look up the correct epoch's public key from the keyring. Capsules signed with old keys verify after rotation without manual key management.
+
+**Migration:** The first time the `Seal` or CLI encounters an existing key file without a keyring, it creates `keyring.json` with epoch 0 for the existing key. No manual migration required.
 
 ---
 
@@ -371,6 +411,52 @@ capsule = await chain.seal_and_store(capsule, seal)
 | `AUTH` | `"auth"` | Authentication events |
 
 Capsules can form parent-child hierarchies: `WORKFLOW` (parent) -> `AGENT` (child) -> `TOOL` (grandchild), linked by `parent_id`.
+
+---
+
+## CLI
+
+<!-- VERIFIED: reference/python/src/qp_capsule/cli.py:1-617 -->
+
+The `capsule` CLI provides command-line verification, inspection, and key management. It is installed automatically with the Python package and has zero additional dependencies.
+
+```bash
+pip install qp-capsule
+```
+
+### Verification
+
+```bash
+capsule verify chain.json                     # Structural (sequence + previous_hash)
+capsule verify --full chain.json              # + recompute SHA3-256 from content
+capsule verify --signatures --db capsules.db  # + Ed25519 via keyring
+capsule verify --json chain.json              # Machine-readable for policy engines
+capsule verify --quiet chain.json && deploy   # CI/CD gate (exit code only)
+```
+
+Exit codes: 0 = pass, 1 = fail, 2 = error.
+
+### Inspection
+
+```bash
+capsule inspect --db capsules.db --seq 47     # Full 6-section display for capsule #47
+capsule inspect --db capsules.db --id <uuid>  # Look up by ID
+capsule inspect capsule.json                  # From exported JSON
+```
+
+### Key Management
+
+```bash
+capsule keys info                             # Epoch history and active key
+capsule keys rotate                           # Rotate to new epoch (no downtime)
+capsule keys export-public                    # Export for third-party verification
+```
+
+### Utility
+
+```bash
+capsule hash document.pdf                     # SHA3-256 of any file
+```
 
 ---
 

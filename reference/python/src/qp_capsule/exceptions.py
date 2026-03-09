@@ -23,3 +23,7 @@ class ChainError(CapsuleError):
 
 class StorageError(CapsuleError):
     """Capsule storage operation failed."""
+
+
+class KeyringError(CapsuleError):
+    """Keyring operation failed (load, save, rotate, lookup)."""

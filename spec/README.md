@@ -391,7 +391,50 @@ A sealed Capsule is valid regardless of where it is stored. An attacker who copi
 
 ---
 
-## 8. URI Scheme
+## 8. Key Management Recommendations
+
+The CPS does not mandate a specific key management implementation. The following are recommendations for conformant implementations.
+
+### 8.1 Epoch-Based Rotation
+
+Implementations SHOULD support key rotation through an *epoch* model:
+
+- Each epoch represents a single Ed25519 key pair with a lifecycle: **active**, **retired**
+- At any time, exactly one epoch is active (used for signing new Capsules)
+- Retired epochs retain their public key for verification of previously-signed Capsules
+- The private key from a retired epoch SHOULD be securely deleted
+
+### 8.2 Keyring
+
+Implementations SHOULD maintain a keyring file (or equivalent) that maps fingerprints to public keys across epochs. This enables verification of Capsules signed by any epoch without manual key management.
+
+### 8.3 Backward-Compatible Verification
+
+When verifying a sealed Capsule, implementations SHOULD:
+
+1. Read the Capsule's `signed_by` fingerprint
+2. Look up the corresponding public key in the keyring
+3. Verify the Ed25519 signature with the resolved key
+4. Fall back to the local active key if the fingerprint is not found
+
+This allows a single verifier to validate Capsules from any epoch.
+
+### 8.4 NIST SP 800-57 Alignment
+
+| Lifecycle Phase | Recommendation |
+|---|---|
+| Generation | Generate Ed25519 key pair using cryptographically secure random |
+| Active | Use for new Capsule signatures |
+| Retired | Retain public key in keyring; delete private key |
+| Destroyed | Overwrite private key file on rotation |
+
+### 8.5 Fingerprints
+
+Implementations SHOULD identify signing keys by a short fingerprint derived from the public key. The Python reference uses the format `qp_key_XXXX` (first 4 hex characters of the public key). Implementations MAY use different fingerprint formats but MUST ensure fingerprints are unique within a keyring.
+
+---
+
+## 9. URI Scheme
 
 Capsules are content-addressable via the `capsule://` URI scheme. Every sealed Capsule can be referenced by its SHA3-256 hash:
 
