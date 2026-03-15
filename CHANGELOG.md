@@ -9,12 +9,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.4.0] - 2026-03-15
+
+Ecosystem expansion: Go verifier, LiteLLM integration, and negative conformance vectors.
+
 ### Added
 
-- **Go verifier library** (`capsule-go`) -- canonical JSON serialization, SHA3-256 hashing, Ed25519 signature verification, and structural/full/signature chain verification in Go. Passes all 16 golden conformance vectors. Uses `crypto/ed25519` (stdlib) and `golang.org/x/crypto/sha3`. Verification-only (no capsule creation).
-- **LiteLLM integration** (`capsule-litellm`) -- `CapsuleLogger` callback that seals every LLM call into a Capsule. Sync and async support. Captures prompt hash (SHA3-256), token metrics, latency, model identity, and error tracking. Install: `pip install capsule-litellm`.
+- **Go verifier library** ([`capsule-go`](https://github.com/quantumpipes/capsule-go)) -- canonical JSON serialization, SHA3-256 hashing, Ed25519 signature verification, and structural/full/signature chain verification in Go. Passes all 16 golden conformance vectors. Uses `crypto/ed25519` (stdlib) and `golang.org/x/crypto/sha3`. Verification-only (no capsule creation).
+- **LiteLLM integration** ([`capsule-litellm`](https://github.com/quantumpipes/capsule-litellm)) -- `CapsuleLogger` callback that seals every LLM call into a Capsule. Sync and async support. Captures prompt hash (SHA3-256), token metrics, latency, model identity, and error tracking. Install: `pip install capsule-litellm`.
 - **Invalid capsule fixtures** (`conformance/invalid-fixtures.json`) -- 15 negative test vectors across 5 error categories: missing required fields, wrong types, invalid values, chain violations, and content tampering. Verifiers SHOULD reject all of these.
-- **Python tests for invalid fixtures** (`test_invalid_fixtures.py`) -- 27 tests validating the invalid fixture suite: structure, missing fields, wrong types, invalid values, chain violations, integrity violation via `compute_hash()`, and coverage guard.
+- **Python tests for invalid fixtures** (`test_invalid_fixtures.py`) -- 33 tests validating the invalid fixture suite: structure, missing fields, wrong types, invalid values, chain violations, integrity violation via `compute_hash()`, and coverage guard.
+- **Ecosystem documentation** -- README restructured with Reference Implementations and Ecosystem Libraries sections. Architecture doc adds ecosystem diagram and library descriptions. Docs index adds ecosystem section.
 
 ---
 
@@ -145,6 +152,7 @@ Initial public release of the Capsule Protocol Specification (CPS) v1.0 referenc
 
 ---
 
+[1.4.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.4.0
 [1.3.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.3.0
 [1.2.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.2.0
 [1.1.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.1.0
