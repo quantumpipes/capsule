@@ -9,6 +9,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Go verifier library** (`capsule-go`) -- canonical JSON serialization, SHA3-256 hashing, Ed25519 signature verification, and structural/full/signature chain verification in Go. Passes all 16 golden conformance vectors. Uses `crypto/ed25519` (stdlib) and `golang.org/x/crypto/sha3`. Verification-only (no capsule creation).
+- **LiteLLM integration** (`capsule-litellm`) -- `CapsuleLogger` callback that seals every LLM call into a Capsule. Sync and async support. Captures prompt hash (SHA3-256), token metrics, latency, model identity, and error tracking. Install: `pip install capsule-litellm`.
+- **Invalid capsule fixtures** (`conformance/invalid-fixtures.json`) -- 15 negative test vectors across 5 error categories: missing required fields, wrong types, invalid values, chain violations, and content tampering. Verifiers SHOULD reject all of these.
+- **Python tests for invalid fixtures** (`test_invalid_fixtures.py`) -- 27 tests validating the invalid fixture suite: structure, missing fields, wrong types, invalid values, chain violations, integrity violation via `compute_hash()`, and coverage guard.
+
 ---
 
 ## [1.3.0] - 2026-03-09

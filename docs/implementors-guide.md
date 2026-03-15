@@ -248,7 +248,8 @@ Once conformant, submit a PR to add your implementation to `reference/<language>
 ## Reference
 
 - [CPS v1.0 Specification](../spec/) — The normative protocol spec
-- [Conformance Suite](../conformance/) — Golden test vectors
+- [Conformance Suite](../conformance/) — Golden test vectors (16 valid + 15 invalid)
 - [Python Reference](../reference/python/) — Python implementation (conformant, 668 tests, 100% coverage)
 - [TypeScript Reference](../reference/typescript/) — TypeScript implementation (conformant, 101 tests, 100% coverage)
+- [Go Verifier](https://github.com/quantumpipes/capsule-go) — Go verification library (conformant, verification only)
 - [URI Scheme](../spec/uri-scheme.md) — Content-addressable references

@@ -99,6 +99,38 @@ The URI spec is at [`spec/uri-scheme.md`](../spec/uri-scheme.md).
 
 ---
 
+## Invalid Capsule Fixtures
+
+The `invalid-fixtures.json` file provides 15 test vectors for **malformed or structurally invalid** capsules. A conformant verifier SHOULD reject each of these.
+
+Each entry contains:
+
+| Field | Type | Description |
+|---|---|---|
+| `capsule_dict` | object | A malformed capsule |
+| `expected_error` | string | Error category: `missing_field`, `wrong_type`, `invalid_value`, `chain_violation`, `integrity_violation` |
+| `error_field` | string | Which field caused the error |
+
+### Error categories
+
+| Category | Description | Example |
+|---|---|---|
+| `missing_field` | A required field is absent | No `id`, no `trigger` section, empty object |
+| `wrong_type` | A field has the wrong JSON type | `sequence` is a string, `trigger` is an array |
+| `invalid_value` | A field has an invalid value | Negative sequence, confidence > 1.0, unknown CapsuleType |
+| `chain_violation` | Chain rules (CPS Section 4) are violated | Genesis with previous_hash, non-genesis without it |
+| `integrity_violation` | Stored hash does not match content | Tampered domain with original hash |
+
+### Invalid capsule conformance check
+
+For every fixture:
+
+1. Attempt to validate the capsule
+2. Confirm the validator rejects it with an appropriate error
+3. For `integrity_violation` fixtures, verify that `VerifyHash(capsule_dict, claimed_hash)` returns false
+
+---
+
 ## Adding New Fixtures
 
 New fixtures must be added through the [protocol change proposal](https://github.com/quantumpipes/capsule/issues/new?template=spec-change.md) process. Every new fixture must:
