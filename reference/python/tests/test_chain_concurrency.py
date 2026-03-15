@@ -21,7 +21,6 @@ import logging
 from unittest.mock import AsyncMock
 
 import pytest
-
 from qp_capsule.capsule import Capsule, TriggerSection
 from qp_capsule.chain import CapsuleChain, _MAX_CHAIN_RETRIES, _is_integrity_error
 from qp_capsule.exceptions import CapsuleError, ChainConflictError, ChainError, StorageError
