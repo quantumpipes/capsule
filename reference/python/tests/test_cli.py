@@ -632,7 +632,7 @@ class TestMain:
             main(["--version"])
         out = capsys.readouterr().out
         assert "capsule" in out
-        assert "1.3.0" in out
+        assert "1.4.0" in out
 
     def test_verify_via_main(self, seal, temp_dir, monkeypatch):
         monkeypatch.setenv("NO_COLOR", "1")
