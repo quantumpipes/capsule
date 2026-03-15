@@ -121,13 +121,9 @@ The **Capsule Protocol Specification (CPS)** defines the complete protocol:
 |---|---|
 | [CPS v1.0](./spec/) | Record structure, canonical serialization, sealing algorithm, hash chain rules |
 | [URI Scheme](./spec/uri-scheme.md) | `capsule://` content-addressable references |
-| [Conformance Suite](./conformance/) | 16 golden test vectors for cross-language verification |
+| [Conformance Suite](./conformance/) | 16 golden vectors (valid) + 15 negative vectors (invalid) |
 
 The specification is language-agnostic. Any implementation that passes the conformance suite can seal and verify Capsules produced by any other.
-
-```
-  Language A (seal)  ──→  Canonical JSON + SHA3-256 + Ed25519  ──→  Language B (verify) ✓
-```
 
 ---
 
@@ -164,16 +160,32 @@ See more examples in [`examples/`](./examples/).
 
 ---
 
-## Reference Implementations
+## Implementations
+
+### Reference Implementations
+
+These live in this repository and define correct behavior for each language.
 
 | Language | Status | Install | Source |
 |---|---|---|---|
-| **Python** | v1.3.0 (stable) | `pip install qp-capsule` | [`reference/python/`](./reference/python/) |
-| **TypeScript** | v0.0.1 (conformant, 16/16 fixtures) | `npm install @quantumpipes/capsule` | [`reference/typescript/`](./reference/typescript/) |
-| Go | Separate repo (planned) | — | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) |
-| Rust | Separate repo (planned) | — | [quantumpipes/capsule-rust](https://github.com/quantumpipes/capsule-rust) |
+| **Python** | v1.3.0 — create, seal, verify, chain, store, CLI | `pip install qp-capsule` | [`reference/python/`](./reference/python/) |
+| **TypeScript** | v0.0.1 — create, seal, verify, chain | `npm install @quantumpipes/capsule` | [`reference/typescript/`](./reference/typescript/) |
 
-All reference implementations must pass the [conformance suite](./conformance/). The specification is the source of truth; implementations follow.
+### Ecosystem Libraries
+
+These extend the protocol to new languages and frameworks.
+
+| Library | Purpose | Install | Source |
+|---|---|---|---|
+| **[capsule-go](https://github.com/quantumpipes/capsule-go)** | Verify Capsules in Go | `go get github.com/quantumpipes/capsule-go` | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) |
+| **[capsule-litellm](https://github.com/quantumpipes/capsule-litellm)** | Automatic audit trail for LiteLLM | `pip install capsule-litellm` | [quantumpipes/capsule-litellm](https://github.com/quantumpipes/capsule-litellm) |
+| capsule-rust | Verify Capsules in Rust | — | Planned |
+
+All implementations must pass the [conformance suite](./conformance/). The specification is the source of truth.
+
+```
+  Language A (seal)  ──→  Canonical JSON + SHA3-256 + Ed25519  ──→  Language B (verify) ✓
+```
 
 ### Quick Start (Python)
 
@@ -197,23 +209,47 @@ seal.seal(capsule)
 assert seal.verify(capsule)
 ```
 
-### CLI
-
-The Python package includes a CLI for verification, inspection, and key management:
+### Quick Start (Go — Verification)
 
 ```bash
-capsule verify chain.json                      # Structural verification
-capsule verify --full --db capsules.db         # + SHA3-256 recomputation
-capsule verify --signatures --json chain.json  # + Ed25519, JSON output
-capsule inspect --db capsules.db --seq 47      # Full 6-section display
-capsule keys info                              # Epoch history
-capsule keys rotate                            # Rotate to new key (no downtime)
-capsule hash document.pdf                      # SHA3-256 of any file
+go get github.com/quantumpipes/capsule-go
 ```
 
-Exit codes: `0` = pass, `1` = fail, `2` = error. Designed for CI/CD gates: `capsule verify --quiet && deploy`.
+```go
+import capsule "github.com/quantumpipes/capsule-go"
 
-See the [Python reference documentation](./reference/python/) for the full guide.
+// Verify a capsule's hash integrity
+valid := capsule.VerifyHash(capsuleDict, expectedHash)
+
+// Verify an Ed25519 signature
+valid := capsule.VerifySignature(hashHex, signatureHex, publicKeyHex)
+
+// Verify an entire chain (structural + cryptographic)
+errs := capsule.VerifyChainFull(sealedCapsules)
+```
+
+The Go library is verification-only by design. Seal in any language, verify in Go — infrastructure tooling, CI gates, and audit pipelines can validate Capsules without a full SDK.
+
+### Quick Start (LiteLLM Integration)
+
+```bash
+pip install capsule-litellm
+```
+
+```python
+import litellm
+from capsule_litellm import CapsuleLogger
+
+litellm.callbacks = [CapsuleLogger()]
+
+# Every LLM call now produces a sealed Capsule automatically
+response = litellm.completion(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Deploy service v2.4"}],
+)
+```
+
+Two lines of code. Every `litellm.completion()` and `litellm.acompletion()` call produces a sealed, hash-chained Capsule with the model identity, SHA3-256 prompt hash, token metrics, and latency — without touching your application code.
 
 ### Quick Start (TypeScript)
 
@@ -241,7 +277,23 @@ await seal(capsule, privateKey);
 console.log(await verify(capsule, await publicKey)); // true
 ```
 
-See the [TypeScript reference documentation](./reference/typescript/) for the full guide.
+### CLI
+
+The Python package includes a CLI for verification, inspection, and key management:
+
+```bash
+capsule verify chain.json                      # Structural verification
+capsule verify --full --db capsules.db         # + SHA3-256 recomputation
+capsule verify --signatures --json chain.json  # + Ed25519, JSON output
+capsule inspect --db capsules.db --seq 47      # Full 6-section display
+capsule keys info                              # Epoch history
+capsule keys rotate                            # Rotate to new key (no downtime)
+capsule hash document.pdf                      # SHA3-256 of any file
+```
+
+Exit codes: `0` = pass, `1` = fail, `2` = error. Designed for CI/CD gates: `capsule verify --quiet && deploy`.
+
+See the [Python reference documentation](./reference/python/) for the full guide.
 
 ---
 
@@ -294,7 +346,7 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md). Protocol changes go through the [CPS c
 
 **∀ action: ∃ capsule**
 
-An open protocol · Reference implementations in [Python](./reference/python/) and [TypeScript](./reference/typescript/) · [Conformance suite](./conformance/) for any language
+An open protocol · [Python](./reference/python/) · [TypeScript](./reference/typescript/) · [Go](https://github.com/quantumpipes/capsule-go) · [LiteLLM](https://github.com/quantumpipes/capsule-litellm) · [Conformance suite](./conformance/) for any language
 
 [Specification](./spec/) · [Conformance](./conformance/) · [Security Policy](./SECURITY.md) · [Patent Grant](./PATENTS.md)
 

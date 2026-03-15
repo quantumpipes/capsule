@@ -460,6 +460,59 @@ capsule hash document.pdf                     # SHA3-256 of any file
 
 ---
 
+## Ecosystem
+
+The Capsule Protocol is implemented across languages and frameworks. The specification and conformance suite live in this repository. Ecosystem libraries extend the protocol to new runtimes.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Capsule Protocol (CPS v1.0)                     │
+│               spec/ · conformance/ · 16 golden vectors              │
+├──────────────────────┬──────────────────────┬───────────────────────┤
+│   Reference Impls    │   Ecosystem Libs     │   Integrations        │
+│   (this repo)        │   (separate repos)   │   (separate repos)    │
+├──────────────────────┼──────────────────────┼───────────────────────┤
+│ Python (qp-capsule)  │ Go (capsule-go)      │ LiteLLM               │
+│   create + seal      │   verify only        │   (capsule-litellm)   │
+│   verify + chain     │   canonical JSON     │   auto-seal LLM calls │
+│   store + CLI        │   SHA3 + Ed25519     │   prompt hash, tokens │
+│                      │   chain verification │   sync + async        │
+│ TypeScript           │                      │                       │
+│   create + seal      │ Rust (planned)       │                       │
+│   verify + chain     │                      │                       │
+└──────────────────────┴──────────────────────┴───────────────────────┘
+```
+
+### capsule-go — Verification in Go
+
+[`quantumpipes/capsule-go`](https://github.com/quantumpipes/capsule-go) is a Go library for verifying Capsules. It implements canonical JSON serialization (CPS Section 2), SHA3-256 hashing (Section 3.1), Ed25519 signature verification (Section 3.2), and chain verification at all three levels (Section 7.5). It passes all 16 golden conformance vectors.
+
+The library is verification-only by design. Infrastructure tooling, CI/CD gates, Kubernetes admission controllers, and audit pipelines can validate Capsules sealed by any language without pulling in a full creation SDK. Dependencies are `crypto/ed25519` (stdlib) and `golang.org/x/crypto/sha3`.
+
+```go
+import capsule "github.com/quantumpipes/capsule-go"
+
+valid := capsule.VerifyHash(capsuleDict, expectedHash)   // content integrity
+valid := capsule.VerifySignature(hash, sig, pubKey)       // Ed25519 authenticity
+errs  := capsule.VerifyChainFull(sealedCapsules)          // structural + cryptographic
+```
+
+### capsule-litellm — Automatic Audit Trail for LLM Calls
+
+[`quantumpipes/capsule-litellm`](https://github.com/quantumpipes/capsule-litellm) is a LiteLLM callback that creates a sealed, hash-chained Capsule for every LLM call. Two lines to integrate. No application code changes.
+
+Each Capsule records the model, a SHA3-256 hash of the prompt (the prompt itself is never stored), token counts, latency, and success or failure status. Supports both `litellm.completion()` and `litellm.acompletion()`. Errors in capsule creation are swallowed by default so they never interrupt the LLM call path.
+
+```python
+import litellm
+from capsule_litellm import CapsuleLogger
+
+litellm.callbacks = [CapsuleLogger()]
+# Every LLM call now produces a sealed Capsule
+```
+
+---
+
 ## Related Documentation
 
 - [Why Capsules](./why-capsules.md) — The case for cryptographic AI memory
@@ -467,6 +520,8 @@ capsule hash document.pdf                     # SHA3-256 of any file
 - [Compliance Mapping](./compliance/) — Regulatory framework alignment
 - [CPS Specification](../spec/) — Protocol rules for SDK authors
 - [Python Reference](../reference/python/) — Python API reference and quickstart
+- [Go Verifier](https://github.com/quantumpipes/capsule-go) — Verify Capsules in Go
+- [LiteLLM Integration](https://github.com/quantumpipes/capsule-litellm) — Auto-seal LLM calls
 
 ---
 

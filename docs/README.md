@@ -30,3 +30,12 @@ Each reference implementation has its own documentation:
 |---|---|
 | [Python](../reference/python/docs/) | API reference, getting started, high-level API |
 | [TypeScript](../reference/typescript/) | README with API reference, quick start, conformance status |
+
+## Ecosystem Libraries
+
+These extend the protocol to additional languages and frameworks. Each lives in its own repository.
+
+| Library | What It Does | Repository |
+|---|---|---|
+| **capsule-go** | Verify Capsules in Go. Canonical JSON serialization, SHA3-256 hashing, Ed25519 signature verification, and structural/cryptographic chain verification. Passes all 16 golden vectors. Verification-only by design — seal in any language, verify in Go. | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) |
+| **capsule-litellm** | Automatic Capsule creation for every LLM call through LiteLLM. Two lines to add. Captures model identity, SHA3-256 prompt hash (not the prompt itself), token counts, latency, and errors. Sync and async. | [quantumpipes/capsule-litellm](https://github.com/quantumpipes/capsule-litellm) |
