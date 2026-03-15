@@ -23,9 +23,8 @@ from unittest.mock import AsyncMock
 import pytest
 
 from qp_capsule.capsule import Capsule, TriggerSection
-from qp_capsule.chain import CapsuleChain, ChainVerificationResult, _is_integrity_error, _MAX_CHAIN_RETRIES
+from qp_capsule.chain import CapsuleChain, _is_integrity_error, _MAX_CHAIN_RETRIES
 from qp_capsule.exceptions import CapsuleError, ChainConflictError, ChainError, StorageError
-from qp_capsule.seal import Seal
 
 
 def _make_capsule(request: str = "test") -> Capsule:
@@ -436,7 +435,7 @@ class TestRetryInvariants:
         chain = CapsuleChain(mock_storage)
         capsule = _make_capsule("retry-reread")
 
-        result = await chain.seal_and_store(capsule, seal=temp_seal)
+        await chain.seal_and_store(capsule, seal=temp_seal)
 
         assert mock_storage.get_latest.call_count == 2
         assert capsule.sequence == 1
@@ -479,7 +478,7 @@ class TestCLIVersionHelper:
         assert version == "1.5.0"
 
     def test_matches_package_version(self):
-        from qp_capsule.cli import _get_version
         import qp_capsule
+        from qp_capsule.cli import _get_version
 
         assert _get_version() == qp_capsule.__version__
