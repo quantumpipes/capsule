@@ -11,6 +11,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.1] - 2026-03-17
+
+Storage column width fix. Prevents PostgreSQL `StorageError` on every capsule write.
+
+### Fixed
+
+- **`signed_at` column overflow on PostgreSQL** — `String(30)` was too narrow for `datetime.isoformat()` output from timezone-aware datetimes (32 characters for UTC `+00:00` suffix). Widened to `String(40)` in both `CapsuleModel` (SQLite) and `CapsuleModelPG` (PostgreSQL). SQLite was unaffected (it doesn't enforce `VARCHAR` length), but every `seal_and_store()` against PostgreSQL raised `StorageError: value too long for type character varying(30)`.
+- **`signed_by` column zero headroom** — `String(16)` exactly matched the legacy 16-character hex fingerprint with no margin. Widened to `String(32)` in both models. The keyring `qp_key_XXXX` format (11 chars) was safe, but any future fingerprint format change would have caused the same overflow.
+
+### Migration
+
+- **New installations**: columns are created with the correct width by `create_all()`.
+- **Existing PostgreSQL databases**:
+  ```sql
+  ALTER TABLE quantumpipes_capsules
+    ALTER COLUMN signed_at TYPE VARCHAR(40),
+    ALTER COLUMN signed_by TYPE VARCHAR(32);
+  ```
+- **Existing SQLite databases**: no action required (SQLite does not enforce `VARCHAR` length).
+
+---
+
 ## [1.5.0] - 2026-03-15
 
 Hash chain concurrency protection. Prevents race conditions where concurrent writes could fork the chain.
@@ -178,6 +200,8 @@ Initial public release of the Capsule Protocol Specification (CPS) v1.0 referenc
 
 ---
 
+[1.5.1]: https://github.com/quantumpipes/capsule/releases/tag/v1.5.1
+[1.5.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.5.0
 [1.4.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.4.0
 [1.3.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.3.0
 [1.2.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.2.0
