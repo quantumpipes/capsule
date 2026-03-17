@@ -1,13 +1,14 @@
 ---
 title: "API Reference"
 description: "Complete API reference for Capsule: every class, method, parameter, and type."
-date_modified: "2026-03-09"
+date_modified: "2026-03-17"
 ai_context: |
-  Complete Python API reference for the qp-capsule package v1.3.0. Covers Capsule model
+  Complete Python API reference for the qp-capsule package v1.5.0. Covers Capsule model
   (6 sections, 8 CapsuleTypes), Seal (seal, verify, verify_with_key, compute_hash,
   keyring integration), Keyring (epoch-based key rotation, NIST SP 800-57),
   CapsuleChain (add, verify, seal_and_store), CapsuleStorageProtocol (7 methods),
-  CapsuleStorage (SQLite), PostgresCapsuleStorage (multi-tenant), exception hierarchy,
+  CapsuleStorage (SQLite), PostgresCapsuleStorage (multi-tenant), storage schema with
+  column constraints (signed_at String(40), signed_by String(32)), exception hierarchy,
   CLI (verify, inspect, keys, hash), and the high-level API: Capsules class, @audit()
   decorator, current() context variable, and mount_capsules() FastAPI integration.
 ---
@@ -504,6 +505,45 @@ The `list()` and `count()` methods accept extra parameters beyond the Protocol:
 | `session_id` | `str \| None` | Filter by session ID (on `list()` only) |
 
 **`CapsuleStoragePG`** is preserved as an alias for backward compatibility.
+
+---
+
+## Storage Schema
+
+Both storage backends persist seal metadata in dedicated columns. The column widths are sized to accommodate all values produced by `Seal.seal()`.
+
+<!-- VERIFIED: reference/python/src/qp_capsule/storage.py:60-71 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage_pg.py:56-68 -->
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | `String(36)` | UUIDv4 primary key |
+| `type` | `String(20)` | `CapsuleType` value |
+| `sequence` | `Integer` | Chain position (indexed, unique per tenant) |
+| `previous_hash` | `String(64)` | SHA3-256 hash of previous Capsule (nullable) |
+| `data` | `Text` | Full Capsule as JSON |
+| `hash` | `String(64)` | SHA3-256 content hash (indexed) |
+| `signature` | `Text` | Ed25519 signature (hex) |
+| `signature_pq` | `Text` | ML-DSA-65 signature (hex, empty if PQ disabled) |
+| `signed_at` | `String(40)` | `datetime.isoformat()` — UTC-aware produces 32 chars (e.g., `2026-03-17T05:24:42.485699+00:00`); 40 provides headroom |
+| `signed_by` | `String(32)` | Key fingerprint — legacy hex prefix is 16 chars, keyring `qp_key_XXXX` is 11 chars; 32 provides headroom |
+| `session_id` | `String(36)` | Conversation session UUID (nullable, indexed) |
+| `domain` | `String(50)` | Capsule domain (PostgreSQL only, indexed) |
+| `tenant_id` | `String(36)` | Tenant isolation (PostgreSQL only, nullable, indexed) |
+
+### Migration from pre-1.5.1
+
+Versions prior to 1.5.1 used `String(30)` for `signed_at` and `String(16)` for `signed_by`. The `signed_at` column was 2 characters too narrow for UTC-aware `datetime.isoformat()` output, causing `StorageError` on every PostgreSQL write.
+
+For existing PostgreSQL deployments:
+
+```sql
+ALTER TABLE quantumpipes_capsules
+  ALTER COLUMN signed_at TYPE VARCHAR(40),
+  ALTER COLUMN signed_by TYPE VARCHAR(32);
+```
+
+SQLite does not enforce `VARCHAR` length, so no migration is needed for SQLite databases.
 
 ---
 

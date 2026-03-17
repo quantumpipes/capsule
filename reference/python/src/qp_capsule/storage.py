@@ -65,8 +65,8 @@ class CapsuleModel(Base):
     hash: Mapped[str] = mapped_column(String(64), index=True)
     signature: Mapped[str] = mapped_column(Text)  # Ed25519 (classical)
     signature_pq: Mapped[str] = mapped_column(Text, default="")  # ML-DSA-65 (post-quantum)
-    signed_at: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    signed_by: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    signed_at: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    signed_by: Mapped[str | None] = mapped_column(String(32), nullable=True)
     # v1.0.0: Session tracking for conversation queries
     session_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
 
