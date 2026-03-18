@@ -11,6 +11,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.2] - 2026-03-18
+
+### Added
+
+- **`Capsule.to_sealed_dict()`** — Serialize a Capsule including the cryptographic seal envelope (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`). Returns everything from `to_dict()` plus the five seal fields. Use this when building API responses or exporting complete sealed records. `to_dict()` continues to return only the canonical content (the part that gets hashed).
+- **`Capsule.from_sealed_dict(data)`** — Inverse of `to_sealed_dict()`. Deserializes both canonical content and seal envelope from a single dict. Missing seal keys default to empty values, so it also accepts plain `to_dict()` output. Enables full roundtrip: `seal → to_sealed_dict → from_sealed_dict → verify`.
+- **21 new tests** across 4 test files — unit tests for both methods (happy path, edge cases, JSON serialization, non-mutation, exact key delta, partial seal fields), real-Seal integration tests (hash stability, verify-after-roundtrip), FastAPI endpoint assertions (seal fields present in list and get responses), and invariant tests (to_sealed_dict superset of to_dict).
+
+### Fixed
+
+- **FastAPI endpoints omitting seal envelope** — `GET /capsules/` and `GET /capsules/{id}` were using `to_dict()`, which excludes seal fields by design. Responses now use `to_sealed_dict()` and include `hash`, `signature`, `signature_pq`, `signed_at`, and `signed_by` alongside the capsule content.
+
+---
+
 ## [1.5.1] - 2026-03-17
 
 Storage column width fix. Prevents PostgreSQL `StorageError` on every capsule write.
@@ -200,6 +214,7 @@ Initial public release of the Capsule Protocol Specification (CPS) v1.0 referenc
 
 ---
 
+[1.5.2]: https://github.com/quantumpipes/capsule/releases/tag/v1.5.2
 [1.5.1]: https://github.com/quantumpipes/capsule/releases/tag/v1.5.1
 [1.5.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.5.0
 [1.4.0]: https://github.com/quantumpipes/capsule/releases/tag/v1.4.0

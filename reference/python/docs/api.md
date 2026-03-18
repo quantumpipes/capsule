@@ -1,16 +1,20 @@
 ---
 title: "API Reference"
 description: "Complete API reference for Capsule: every class, method, parameter, and type."
-date_modified: "2026-03-17"
+date_modified: "2026-03-18"
 ai_context: |
-  Complete Python API reference for the qp-capsule package v1.5.0. Covers Capsule model
-  (6 sections, 8 CapsuleTypes), Seal (seal, verify, verify_with_key, compute_hash,
-  keyring integration), Keyring (epoch-based key rotation, NIST SP 800-57),
+  Complete Python API reference for the qp-capsule package v1.5.1+. Covers Capsule model
+  (6 sections, 8 CapsuleTypes, to_dict/to_sealed_dict/from_dict/from_sealed_dict),
+  Seal (seal, verify, verify_with_key, compute_hash, keyring integration),
+  Keyring (epoch-based key rotation, NIST SP 800-57),
   CapsuleChain (add, verify, seal_and_store), CapsuleStorageProtocol (7 methods),
   CapsuleStorage (SQLite), PostgresCapsuleStorage (multi-tenant), storage schema with
   column constraints (signed_at String(40), signed_by String(32)), exception hierarchy,
   CLI (verify, inspect, keys, hash), and the high-level API: Capsules class, @audit()
   decorator, current() context variable, and mount_capsules() FastAPI integration.
+  to_sealed_dict() returns canonical content plus seal envelope (hash, signature,
+  signature_pq, signed_at, signed_by). from_sealed_dict() is the inverse.
+  FastAPI endpoints use to_sealed_dict() so API responses include the full seal.
 ---
 
 # API Reference
@@ -63,7 +67,7 @@ from qp_capsule.integrations.fastapi import mount_capsules
 
 The atomic record. Every action creates one.
 
-<!-- VERIFIED: reference/python/src/qp_capsule/capsule.py:315-373 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/capsule.py:315-374 -->
 
 ```python
 @dataclass
@@ -98,7 +102,7 @@ class Capsule:
 
 ### Methods
 
-<!-- VERIFIED: reference/python/src/qp_capsule/capsule.py:375-611 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/capsule.py:376-656 -->
 
 **`is_sealed() -> bool`**
 Returns `True` if the Capsule has a hash and Ed25519 signature.
@@ -107,10 +111,36 @@ Returns `True` if the Capsule has a hash and Ed25519 signature.
 Returns `True` if the Capsule also has an ML-DSA-65 post-quantum signature.
 
 **`to_dict() -> dict[str, Any]`**
-Serialize to dictionary. Produces the canonical representation used for hashing and storage.
+Serialize the canonical content of this Capsule. Returns only the content fields — the part that gets hashed. Seal envelope fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`) are deliberately excluded to avoid circular dependency during hash computation. For a complete representation including the seal, use `to_sealed_dict()`.
+
+**`to_sealed_dict() -> dict[str, Any]`**
+Serialize this Capsule including the cryptographic seal envelope. Returns everything from `to_dict()` plus five additional keys: `hash`, `signature`, `signature_pq`, `signed_at` (ISO 8601 string or `null`), and `signed_by`. Use this when serializing capsules for API responses, exports, or any context where the complete sealed record is needed.
+
+```python
+seal.seal(capsule)
+d = capsule.to_sealed_dict()
+
+d["id"]           # "a1b2c3d4-..."
+d["trigger"]      # {...}
+d["hash"]         # "e21819859fce83ea..."  (64-char SHA3-256 hex)
+d["signature"]    # "db37397b068c79..."    (Ed25519 hex)
+d["signature_pq"] # ""                     (empty if PQ disabled)
+d["signed_at"]    # "2026-03-18T02:52:03+00:00"
+d["signed_by"]    # "qp_key_a1b2"
+```
 
 **`Capsule.from_dict(data: dict) -> Capsule`** *(classmethod)*
-Deserialize from dictionary. Restores all 6 sections.
+Deserialize from a canonical content dictionary. Restores all 6 sections. Seal envelope fields, if present in *data*, are ignored. To restore a complete sealed record, use `from_sealed_dict()`.
+
+**`Capsule.from_sealed_dict(data: dict) -> Capsule`** *(classmethod)*
+Deserialize from a sealed dictionary. Restores both the canonical content and the seal envelope fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`). This is the inverse of `to_sealed_dict()`. Missing seal keys default to empty values.
+
+```python
+# Full roundtrip with seal preservation
+d = capsule.to_sealed_dict()
+restored = Capsule.from_sealed_dict(d)
+assert seal.verify(restored)  # True — signature survives the roundtrip
+```
 
 **`Capsule.create(capsule_type=, trigger=, context=, reasoning=, authority=, execution=, outcome=, *, domain=, parent_id=) -> Capsule`** *(classmethod)*
 Factory method that accepts plain dicts instead of section dataclasses. Unknown keys are silently ignored.
@@ -708,7 +738,7 @@ async def run_agent(task: str, *, site_id: str):
 
 ## mount_capsules() (FastAPI Integration)
 
-<!-- VERIFIED: reference/python/src/qp_capsule/integrations/fastapi.py:36-113 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/integrations/fastapi.py:36-119 -->
 
 ```python
 from qp_capsule.integrations.fastapi import mount_capsules
@@ -729,6 +759,8 @@ mount_capsules(app, capsules, prefix="/api/v1/capsules")
 | GET | `{prefix}/` | List capsules (query: `limit`, `offset`, `type`, `tenant_id`) |
 | GET | `{prefix}/verify` | Verify chain integrity (query: `tenant_id`) |
 | GET | `{prefix}/{capsule_id}` | Get capsule by ID (404 if missing) |
+
+All capsule endpoints serialize using `to_sealed_dict()`, so responses include both the canonical content and the cryptographic seal envelope (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`).
 
 FastAPI is not a hard dependency. Raises `CapsuleError` if not installed.
 

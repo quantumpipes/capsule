@@ -88,7 +88,7 @@ def mount_capsules(
             tenant_id=tenant_id,
         )
         return {
-            "capsules": [c.to_dict() for c in items],
+            "capsules": [c.to_sealed_dict() for c in items],
             "total": total,
             "limit": limit,
             "offset": offset,
@@ -114,6 +114,6 @@ def mount_capsules(
         capsule = await capsules.storage.get(capsule_id, tenant_id=tenant_id)
         if capsule is None:
             raise HTTPException(status_code=404, detail="Capsule not found")
-        return capsule.to_dict()
+        return capsule.to_sealed_dict()
 
     app.include_router(router, prefix=prefix)

@@ -204,6 +204,8 @@ mount_capsules(app, capsules, prefix="/api/v1/capsules")
 
 ### Endpoints
 
+All capsule endpoints serialize using `capsule.to_sealed_dict()`, so responses include both the canonical content (the 6 sections) and the cryptographic seal envelope (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`).
+
 #### `GET {prefix}/`
 
 List capsules with pagination and filtering.
@@ -219,7 +221,18 @@ List capsules with pagination and filtering.
 
 ```json
 {
-  "capsules": [...],
+  "capsules": [
+    {
+      "id": "a1b2c3d4-...",
+      "type": "agent",
+      "trigger": { "..." : "..." },
+      "hash": "e21819859fce83ea...",
+      "signature": "db37397b068c79...",
+      "signature_pq": "",
+      "signed_at": "2026-03-18T02:52:03+00:00",
+      "signed_by": "qp_key_a1b2"
+    }
+  ],
   "total": 42,
   "limit": 20,
   "offset": 0
@@ -230,7 +243,7 @@ List capsules with pagination and filtering.
 
 Get a single capsule by UUID.
 
-Returns the full capsule dict, or 404 if not found.
+Returns the full sealed capsule dict (content + seal envelope), or 404 if not found.
 
 #### `GET {prefix}/verify`
 

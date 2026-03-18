@@ -4,7 +4,7 @@ Tests for Capsule model.
 Tests the 6-section Capsule structure and serialization.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 
 from qp_capsule.capsule import (
@@ -204,6 +204,189 @@ class TestCapsuleSerialization:
         assert restored.authority.policy_reference == "POL-001"
         assert len(restored.execution.tool_calls) == 1
         assert restored.outcome.side_effects == ["file_created"]
+
+
+class TestSealedDictSerialization:
+    """Test to_sealed_dict / from_sealed_dict roundtrip."""
+
+    def _sealed_capsule(self):
+        from datetime import datetime, timezone
+
+        capsule = Capsule(
+            type=CapsuleType.AGENT,
+            trigger=TriggerSection(source="test", request="test"),
+        )
+        capsule.hash = "abc123"
+        capsule.signature = "sig456"
+        capsule.signature_pq = "pq789"
+        capsule.signed_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        capsule.signed_by = "key_fingerprint"
+        return capsule
+
+    def test_to_sealed_dict_includes_seal_fields(self):
+        """to_sealed_dict includes all seal envelope fields."""
+        capsule = self._sealed_capsule()
+
+        d = capsule.to_sealed_dict()
+
+        assert d["hash"] == "abc123"
+        assert d["signature"] == "sig456"
+        assert d["signature_pq"] == "pq789"
+        assert d["signed_at"] == "2026-01-01T00:00:00+00:00"
+        assert d["signed_by"] == "key_fingerprint"
+
+    def test_to_sealed_dict_superset_of_to_dict(self):
+        """to_sealed_dict contains every key from to_dict."""
+        capsule = self._sealed_capsule()
+
+        content = capsule.to_dict()
+        sealed = capsule.to_sealed_dict()
+
+        for key in content:
+            assert key in sealed
+            assert sealed[key] == content[key]
+
+    def test_to_sealed_dict_unsealed_has_defaults(self):
+        """to_sealed_dict on an unsealed capsule returns empty/None seal fields."""
+        capsule = Capsule(
+            type=CapsuleType.TOOL,
+            trigger=TriggerSection(source="x", request="y"),
+        )
+
+        d = capsule.to_sealed_dict()
+
+        assert d["hash"] == ""
+        assert d["signature"] == ""
+        assert d["signature_pq"] == ""
+        assert d["signed_at"] is None
+        assert d["signed_by"] == ""
+
+    def test_from_sealed_dict_restores_seal_fields(self):
+        """from_sealed_dict restores seal envelope alongside content."""
+        capsule = self._sealed_capsule()
+        d = capsule.to_sealed_dict()
+
+        restored = Capsule.from_sealed_dict(d)
+
+        assert restored.hash == "abc123"
+        assert restored.signature == "sig456"
+        assert restored.signature_pq == "pq789"
+        assert restored.signed_at == capsule.signed_at
+        assert restored.signed_by == "key_fingerprint"
+        assert restored.id == capsule.id
+        assert restored.type == capsule.type
+
+    def test_sealed_dict_roundtrip(self):
+        """to_sealed_dict -> from_sealed_dict preserves all data."""
+        capsule = Capsule(
+            type=CapsuleType.AGENT,
+            sequence=3,
+            previous_hash="prev",
+            trigger=TriggerSection(source="user", request="do stuff"),
+            context=ContextSection(agent_id="ag1"),
+            reasoning=ReasoningSection(confidence=0.9),
+            authority=AuthoritySection(type="policy"),
+            execution=ExecutionSection(
+                tool_calls=[ToolCall(tool="t", arguments={}, result="ok", success=True)],
+            ),
+            outcome=OutcomeSection(status="success", result="done"),
+        )
+        capsule.hash = "h"
+        capsule.signature = "s"
+        capsule.signature_pq = "spq"
+        capsule.signed_at = datetime.now(tz=timezone.utc)
+        capsule.signed_by = "kf"
+
+        d = capsule.to_sealed_dict()
+        restored = Capsule.from_sealed_dict(d)
+
+        assert restored.hash == capsule.hash
+        assert restored.signature == capsule.signature
+        assert restored.sequence == 3
+        assert restored.outcome.status == "success"
+        assert len(restored.execution.tool_calls) == 1
+
+    def test_from_sealed_dict_tolerates_missing_seal_fields(self):
+        """from_sealed_dict works with a plain content dict (no seal keys)."""
+        capsule = Capsule(
+            type=CapsuleType.TOOL,
+            trigger=TriggerSection(source="x", request="y"),
+        )
+        d = capsule.to_dict()
+
+        restored = Capsule.from_sealed_dict(d)
+
+        assert restored.hash == ""
+        assert restored.signature == ""
+        assert restored.signed_at is None
+
+    def test_to_sealed_dict_is_json_serializable(self):
+        """to_sealed_dict output can be passed to json.dumps without error."""
+        import json
+
+        capsule = self._sealed_capsule()
+        d = capsule.to_sealed_dict()
+
+        serialized = json.dumps(d)
+        assert isinstance(serialized, str)
+
+        roundtripped = json.loads(serialized)
+        assert roundtripped["hash"] == "abc123"
+        assert roundtripped["signed_at"] == "2026-01-01T00:00:00+00:00"
+
+    def test_to_sealed_dict_does_not_mutate_capsule(self):
+        """Calling to_sealed_dict has no side effects on the capsule."""
+        capsule = self._sealed_capsule()
+        original_hash = capsule.hash
+        original_sig = capsule.signature
+        original_signed_at = capsule.signed_at
+
+        capsule.to_sealed_dict()
+        capsule.to_sealed_dict()
+
+        assert capsule.hash == original_hash
+        assert capsule.signature == original_sig
+        assert capsule.signed_at == original_signed_at
+
+    def test_to_sealed_dict_adds_exactly_five_keys(self):
+        """to_sealed_dict has exactly 5 more keys than to_dict."""
+        capsule = self._sealed_capsule()
+
+        content_keys = set(capsule.to_dict().keys())
+        sealed_keys = set(capsule.to_sealed_dict().keys())
+
+        added = sealed_keys - content_keys
+        assert added == {"hash", "signature", "signature_pq", "signed_at", "signed_by"}
+
+    def test_from_dict_ignores_seal_fields_in_input(self):
+        """from_dict does not restore seal fields even when present in data."""
+        capsule = self._sealed_capsule()
+        d = capsule.to_sealed_dict()
+
+        restored = Capsule.from_dict(d)
+
+        assert restored.hash == ""
+        assert restored.signature == ""
+        assert restored.signature_pq == ""
+        assert restored.signed_at is None
+        assert restored.signed_by == ""
+
+    def test_from_sealed_dict_with_partial_seal_fields(self):
+        """from_sealed_dict fills defaults for missing seal keys."""
+        capsule = Capsule(
+            type=CapsuleType.AGENT,
+            trigger=TriggerSection(source="x", request="y"),
+        )
+        d = capsule.to_dict()
+        d["hash"] = "only_hash_present"
+
+        restored = Capsule.from_sealed_dict(d)
+
+        assert restored.hash == "only_hash_present"
+        assert restored.signature == ""
+        assert restored.signature_pq == ""
+        assert restored.signed_at is None
+        assert restored.signed_by == ""
 
 
 class TestCapsuleString:

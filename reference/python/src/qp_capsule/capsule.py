@@ -392,12 +392,15 @@ class Capsule:
 
     def to_dict(self) -> dict[str, Any]:
         """
-        Serialize Capsule for hashing.
+        Serialize the canonical content of this Capsule.
 
-        This produces the canonical representation used for:
-        - Computing the SHA3-256 hash
-        - Verifying integrity
-        - Storage
+        Returns only the content fields — the part that gets hashed.
+        Seal envelope fields (hash, signature, signed_at, etc.) are
+        deliberately excluded to avoid circular dependency during
+        hash computation.
+
+        For a complete representation including the seal, use
+        :meth:`to_sealed_dict`.
         """
         return {
             "id": str(self.id),
@@ -464,12 +467,33 @@ class Capsule:
             },
         }
 
+    def to_sealed_dict(self) -> dict[str, Any]:
+        """
+        Serialize this Capsule including the cryptographic seal envelope.
+
+        Returns everything from :meth:`to_dict` plus the seal fields:
+        ``hash``, ``signature``, ``signature_pq``, ``signed_at``, and
+        ``signed_by``.
+
+        Use this when serializing capsules for API responses, exports,
+        or any context where the complete sealed record is needed.
+        """
+        d = self.to_dict()
+        d["hash"] = self.hash
+        d["signature"] = self.signature
+        d["signature_pq"] = self.signature_pq
+        d["signed_at"] = self.signed_at.isoformat() if self.signed_at else None
+        d["signed_by"] = self.signed_by
+        return d
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Capsule:
         """
-        Deserialize Capsule from dictionary.
+        Deserialize Capsule from a canonical content dictionary.
 
-        Used when loading from storage.
+        Restores only the content fields. Seal envelope fields, if
+        present in *data*, are ignored. To restore a complete sealed
+        record, use :meth:`from_sealed_dict`.
         """
         capsule = cls(
             id=UUID(data["id"]),
@@ -560,6 +584,26 @@ class Capsule:
             metrics=o.get("metrics", {}),
         )
 
+        return capsule
+
+    @classmethod
+    def from_sealed_dict(cls, data: dict[str, Any]) -> Capsule:
+        """
+        Deserialize a Capsule from a sealed dictionary.
+
+        Restores both the canonical content **and** the seal envelope
+        fields (``hash``, ``signature``, ``signature_pq``, ``signed_at``,
+        ``signed_by``). This is the inverse of :meth:`to_sealed_dict`.
+        """
+        capsule = cls.from_dict(data)
+        capsule.hash = data.get("hash", "")
+        capsule.signature = data.get("signature", "")
+        capsule.signature_pq = data.get("signature_pq", "")
+        signed_at = data.get("signed_at")
+        capsule.signed_at = (
+            datetime.fromisoformat(signed_at) if signed_at else None
+        )
+        capsule.signed_by = data.get("signed_by", "")
         return capsule
 
     @classmethod

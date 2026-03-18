@@ -348,6 +348,61 @@ class TestSealKeyringIntegration:
         assert len(kr.epochs) == 1
 
 
+class TestSealedDictIntegration:
+    """Test to_sealed_dict / from_sealed_dict with real cryptographic sealing."""
+
+    def test_to_sealed_dict_after_real_seal(self, seal, sample_capsule):
+        """to_sealed_dict returns real crypto fields after Seal.seal()."""
+        seal.seal(sample_capsule)
+
+        d = sample_capsule.to_sealed_dict()
+
+        assert d["hash"] == sample_capsule.hash
+        assert len(d["hash"]) == 64
+        assert d["signature"] == sample_capsule.signature
+        assert len(d["signature"]) > 0
+        assert d["signed_by"] == sample_capsule.signed_by
+        assert d["signed_at"] is not None
+
+    def test_sealed_dict_hash_matches_content_hash(self, seal, sample_capsule):
+        """The hash in to_sealed_dict equals compute_hash of canonical content."""
+        seal.seal(sample_capsule)
+
+        sealed = sample_capsule.to_sealed_dict()
+        expected = compute_hash(sample_capsule.to_dict())
+
+        assert sealed["hash"] == expected
+
+    def test_sealed_dict_roundtrip_verifies(self, seal, sample_capsule):
+        """seal -> to_sealed_dict -> from_sealed_dict -> verify passes."""
+        seal.seal(sample_capsule)
+        d = sample_capsule.to_sealed_dict()
+
+        restored = Capsule.from_sealed_dict(d)
+
+        assert restored.is_sealed()
+        assert seal.verify(restored) is True
+
+    def test_sealed_dict_roundtrip_preserves_all_seal_fields(self, seal, sample_capsule):
+        """Every seal field survives the roundtrip through to_sealed_dict/from_sealed_dict."""
+        seal.seal(sample_capsule)
+        d = sample_capsule.to_sealed_dict()
+        restored = Capsule.from_sealed_dict(d)
+
+        assert restored.hash == sample_capsule.hash
+        assert restored.signature == sample_capsule.signature
+        assert restored.signature_pq == sample_capsule.signature_pq
+        assert restored.signed_by == sample_capsule.signed_by
+        assert restored.signed_at == sample_capsule.signed_at
+
+    def test_sealed_dict_pq_field_empty_when_disabled(self, seal, sample_capsule):
+        """signature_pq is empty string when post-quantum is not enabled."""
+        seal.seal(sample_capsule)
+        d = sample_capsule.to_sealed_dict()
+
+        assert d["signature_pq"] == ""
+
+
 class TestComputeHash:
     """Test standalone hash function."""
 

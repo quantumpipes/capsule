@@ -505,3 +505,20 @@ class TestSealFieldIsolation:
         assert "signature_pq" not in d
         assert "signed_by" not in d
         assert "signed_at" not in d
+
+    def test_to_sealed_dict_includes_seal_fields(self):
+        capsule = _fully_populated_capsule()
+        capsule.hash = "test_hash"
+        capsule.signature = "test_sig"
+        capsule.signature_pq = "test_pq"
+        capsule.signed_by = "test_key"
+
+        d = capsule.to_sealed_dict()
+        assert d["hash"] == "test_hash"
+        assert d["signature"] == "test_sig"
+        assert d["signature_pq"] == "test_pq"
+        assert d["signed_by"] == "test_key"
+
+        content = capsule.to_dict()
+        for key in content:
+            assert key in d, f"to_sealed_dict missing content key: {key}"

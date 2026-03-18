@@ -137,6 +137,46 @@ class TestGetCapsule:
         assert resp.status_code == 404
 
 
+SEAL_ENVELOPE_KEYS = {"hash", "signature", "signature_pq", "signed_at", "signed_by"}
+
+
+class TestEndpointsIncludeSealFields:
+    """Verify API responses include the cryptographic seal envelope."""
+
+    async def test_list_capsules_includes_seal_fields(self, app_and_capsules) -> None:
+        app, capsules = app_and_capsules
+        await _seed_capsules(capsules, count=2)
+
+        with TestClient(app) as tc:
+            resp = tc.get("/capsules/")
+        assert resp.status_code == 200
+        data = resp.json()
+
+        for cap in data["capsules"]:
+            for key in SEAL_ENVELOPE_KEYS:
+                assert key in cap, f"missing '{key}' in list response"
+            assert len(cap["hash"]) == 64
+            assert len(cap["signature"]) > 0
+            assert cap["signed_at"] is not None
+            assert cap["signed_by"] != ""
+
+    async def test_get_capsule_includes_seal_fields(self, app_and_capsules) -> None:
+        app, capsules = app_and_capsules
+        sealed = await _seed_capsules(capsules, count=1)
+        capsule_id = str(sealed[0].id)
+
+        with TestClient(app) as tc:
+            resp = tc.get(f"/capsules/{capsule_id}")
+        assert resp.status_code == 200
+        cap = resp.json()
+
+        for key in SEAL_ENVELOPE_KEYS:
+            assert key in cap, f"missing '{key}' in get response"
+        assert cap["hash"] == sealed[0].hash
+        assert cap["signature"] == sealed[0].signature
+        assert cap["signed_by"] == sealed[0].signed_by
+
+
 class TestVerifyChain:
     def test_verify_chain_empty(self, client: TestClient) -> None:
         resp = client.get("/capsules/verify")
