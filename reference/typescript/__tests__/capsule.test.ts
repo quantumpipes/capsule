@@ -80,7 +80,7 @@ describe("toDict", () => {
     expect("signed_by" in dict).toBe(false);
   });
 
-  it("includes all 12 content fields", () => {
+  it("includes all 13 content fields", () => {
     const dict = toDict(createCapsule());
     const keys = Object.keys(dict);
     expect(keys).toContain("id");
@@ -89,13 +89,14 @@ describe("toDict", () => {
     expect(keys).toContain("parent_id");
     expect(keys).toContain("sequence");
     expect(keys).toContain("previous_hash");
+    expect(keys).toContain("spec_version");
     expect(keys).toContain("trigger");
     expect(keys).toContain("context");
     expect(keys).toContain("reasoning");
     expect(keys).toContain("authority");
     expect(keys).toContain("execution");
     expect(keys).toContain("outcome");
-    expect(keys).toHaveLength(12);
+    expect(keys).toHaveLength(13);
   });
 });
 

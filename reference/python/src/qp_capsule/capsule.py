@@ -353,6 +353,11 @@ class Capsule:
     previous_hash: str | None = None  # Hash of previous Capsule in chain
 
     # -------------------------------------------------------------------------
+    # Protocol version (on-wire, included in canonical hash)
+    # -------------------------------------------------------------------------
+    spec_version: str = "1.0"  # CPS wire-format version for parse-time branching
+
+    # -------------------------------------------------------------------------
     # The 6 Sections
     # -------------------------------------------------------------------------
     trigger: TriggerSection = field(default_factory=TriggerSection)
@@ -410,6 +415,7 @@ class Capsule:
             # Hash chain
             "sequence": self.sequence,
             "previous_hash": self.previous_hash,
+            "spec_version": self.spec_version,
             "trigger": {
                 "type": self.trigger.type,
                 "source": self.trigger.source,
@@ -502,6 +508,7 @@ class Capsule:
             parent_id=UUID(data["parent_id"]) if data.get("parent_id") else None,
             sequence=data.get("sequence", 0),
             previous_hash=data.get("previous_hash"),
+            spec_version=data.get("spec_version", "1.0"),
         )
 
         # Trigger

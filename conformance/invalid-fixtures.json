@@ -12,7 +12,7 @@
   "fixtures": [
     {
       "name": "missing_id",
-      "description": "Capsule with no 'id' field. All 12 top-level fields are required per CPS Section 1.",
+      "description": "Capsule with no 'id' field. All 13 top-level fields are required per CPS Section 1.",
       "expected_error": "missing_field",
       "error_field": "id",
       "capsule_dict": {
@@ -21,12 +21,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -40,12 +78,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -60,11 +136,42 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -79,11 +186,40 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -98,12 +234,50 @@
         "parent_id": null,
         "sequence": "zero",
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -118,12 +292,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": "high", "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": "high",
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -138,12 +350,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": null, "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": null,
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -158,12 +408,50 @@
         "parent_id": null,
         "sequence": -1,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -178,12 +466,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 1.5, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 1.5,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -198,12 +524,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -218,12 +582,50 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -238,12 +640,50 @@
         "parent_id": null,
         "sequence": 1,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -265,12 +705,47 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": ["not", "an", "object"],
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": [
+          "not",
+          "an",
+          "object"
+        ],
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       }
     },
     {
@@ -285,14 +760,109 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
-        "trigger": { "type": "user_request", "source": "", "timestamp": "2026-01-15T12:00:00+00:00", "request": "", "correlation_id": null, "user_id": null },
-        "context": { "agent_id": "", "session_id": null, "environment": {} },
-        "reasoning": { "analysis": "", "options": [], "options_considered": [], "selected_option": "", "reasoning": "", "confidence": 0.0, "model": null, "prompt_hash": null },
-        "authority": { "type": "autonomous", "approver": null, "policy_reference": null, "chain": [], "escalation_reason": null },
-        "execution": { "tool_calls": [], "duration_ms": 0, "resources_used": {} },
-        "outcome": { "status": "pending", "result": null, "summary": "", "error": null, "side_effects": [], "metrics": {} }
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
       },
       "claimed_hash": "e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee"
+    },
+    {
+      "name": "missing_spec_version",
+      "description": "Capsule with no 'spec_version' field. Required per CPS Section 1 (implicit 1.0 only for legacy parsers; validators reject missing in strict validation).",
+      "expected_error": "missing_field",
+      "error_field": "spec_version",
+      "capsule_dict": {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "type": "agent",
+        "domain": "agents",
+        "parent_id": null,
+        "sequence": 0,
+        "previous_hash": null,
+        "trigger": {
+          "type": "user_request",
+          "source": "",
+          "timestamp": "2026-01-15T12:00:00+00:00",
+          "request": "",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [],
+          "options_considered": [],
+          "selected_option": "",
+          "reasoning": "",
+          "confidence": 0.0,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "pending",
+          "result": null,
+          "summary": "",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
+      }
     }
   ]
 }

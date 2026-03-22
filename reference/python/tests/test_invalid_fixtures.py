@@ -28,12 +28,14 @@ _VALID_CAPSULE_TYPES = frozenset({
 
 _REQUIRED_TOP_LEVEL = frozenset({
     "id", "type", "domain", "parent_id", "sequence", "previous_hash",
+    "spec_version",
     "trigger", "context", "reasoning", "authority", "execution", "outcome",
 })
 
 _ALL_FIXTURE_NAMES = [
     "missing_id", "missing_type", "missing_trigger_section",
-    "missing_reasoning_section", "sequence_wrong_type",
+    "missing_reasoning_section", "missing_spec_version",
+    "sequence_wrong_type",
     "confidence_wrong_type", "trigger_type_null", "negative_sequence",
     "confidence_out_of_range", "unknown_capsule_type",
     "genesis_with_previous_hash", "non_genesis_null_previous_hash",
@@ -64,8 +66,8 @@ class TestSuiteIntegrity:
     def test_file_exists(self):
         assert _FIXTURES_PATH.exists()
 
-    def test_has_15_fixtures(self, fixtures):
-        assert len(fixtures) == 15
+    def test_has_16_fixtures(self, fixtures):
+        assert len(fixtures) == 16
 
     def test_all_have_required_keys(self, fixtures):
         for f in fixtures:
@@ -102,14 +104,14 @@ class TestMissingFields:
 
     @pytest.mark.parametrize("name", [
         "missing_id", "missing_type", "missing_trigger_section",
-        "missing_reasoning_section", "empty_object",
+        "missing_reasoning_section", "missing_spec_version", "empty_object",
     ])
     def test_all_categorized_as_missing_field(self, by_name, name):
         assert by_name[name]["expected_error"] == "missing_field"
 
     @pytest.mark.parametrize("name", [
         "missing_id", "missing_type", "missing_trigger_section",
-        "missing_reasoning_section",
+        "missing_reasoning_section", "missing_spec_version",
     ])
     def test_remaining_fields_are_valid(self, by_name, name):
         """Missing-field fixtures should only omit the declared field."""

@@ -72,35 +72,120 @@ export async function seal(
 // Verify
 // ---------------------------------------------------------------------------
 
+/** FR-003: structured verify outcome (aligns with Python `SealVerifyCode`). */
+export type SealVerifyCode =
+  | "ok"
+  | "missing_hash"
+  | "missing_signature"
+  | "malformed_hex"
+  | "hash_mismatch"
+  | "invalid_signature"
+  | "pq_verification_failed"
+  | "pq_library_unavailable"
+  | "unsupported_algorithm";
+
+export interface SealVerificationResult {
+  ok: boolean;
+  code: SealVerifyCode;
+  message: string;
+}
+
 /**
- * Verify a sealed Capsule's integrity and authenticity.
+ * Verify a sealed Capsule and return a structured result (FR-003).
  *
  * 1. Recompute SHA3-256 from content and compare to stored hash
  * 2. Verify Ed25519 signature over the hash string
+ *
+ * TS reference is classical-only; PQ codes are reserved for parity with Python.
+ */
+export async function verifyDetailed(
+  capsule: Capsule,
+  publicKey: Uint8Array,
+): Promise<SealVerificationResult> {
+  if (!capsule.hash) {
+    return {
+      ok: false,
+      code: "missing_hash",
+      message: "capsule has no hash field",
+    };
+  }
+  if (!capsule.signature) {
+    return {
+      ok: false,
+      code: "missing_signature",
+      message: "capsule has no signature field",
+    };
+  }
+
+  const _hashBytes = tryParseHex(capsule.hash, 32);
+  if (_hashBytes === null) {
+    return {
+      ok: false,
+      code: "malformed_hex",
+      message: "hash must be 64 hex chars (32 bytes)",
+    };
+  }
+  const sigBytes = tryParseHex(capsule.signature, 64);
+  if (sigBytes === null) {
+    return {
+      ok: false,
+      code: "malformed_hex",
+      message: "signature must be 128 hex chars (64 bytes)",
+    };
+  }
+
+  let computedHash: string;
+  try {
+    const dict = toDict(capsule);
+    computedHash = computeHash(dict);
+  } catch (e) {
+    return {
+      ok: false,
+      code: "hash_mismatch",
+      message: `could not compute content hash: ${String(e)}`,
+    };
+  }
+
+  if (computedHash.toLowerCase() !== capsule.hash.toLowerCase()) {
+    return {
+      ok: false,
+      code: "hash_mismatch",
+      message: "recomputed hash does not match stored hash",
+    };
+  }
+
+  const hashBytes = new TextEncoder().encode(capsule.hash);
+
+  try {
+    const valid = await ed25519.verifyAsync(sigBytes, hashBytes, publicKey);
+    if (!valid) {
+      return {
+        ok: false,
+        code: "invalid_signature",
+        message: "Ed25519 signature verification failed",
+      };
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      code: "invalid_signature",
+      message: `Ed25519 verification error: ${String(e)}`,
+    };
+  }
+
+  return { ok: true, code: "ok", message: "" };
+}
+
+/**
+ * Verify a sealed Capsule's integrity and authenticity.
+ *
+ * Same as {@link verifyDetailed} but returns only success/failure.
  */
 export async function verify(
   capsule: Capsule,
   publicKey: Uint8Array,
 ): Promise<boolean> {
-  if (!capsule.hash || !capsule.signature) {
-    return false;
-  }
-
-  try {
-    const dict = toDict(capsule);
-    const computedHash = computeHash(dict);
-
-    if (computedHash !== capsule.hash) {
-      return false;
-    }
-
-    const hashBytes = new TextEncoder().encode(capsule.hash);
-    const signatureBytes = hexToBytes(capsule.signature);
-
-    return await ed25519.verifyAsync(signatureBytes, hashBytes, publicKey);
-  } catch {
-    return false;
-  }
+  return (await verifyDetailed(capsule, publicKey)).ok;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,10 +214,16 @@ export async function getFingerprint(privateKey: Uint8Array): Promise<string> {
 // Internal
 // ---------------------------------------------------------------------------
 
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+/** Parse hex to exactly `byteLength` bytes; return null if invalid. */
+function tryParseHex(hex: string, byteLength: number): Uint8Array | null {
+  if (hex.length !== byteLength * 2 || !/^[0-9a-fA-F]+$/.test(hex)) {
+    return null;
   }
-  return bytes;
+  const out = new Uint8Array(byteLength);
+  for (let i = 0; i < hex.length; i += 2) {
+    const v = parseInt(hex.slice(i, i + 2), 16);
+    if (Number.isNaN(v)) return null;
+    out[i / 2] = v;
+  }
+  return out;
 }

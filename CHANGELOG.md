@@ -11,6 +11,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.3] - 2026-03-23
+
+### Added
+
+- **`spec_version`** — Required top-level CPS field (default `"1.0"`) on `Capsule` / `CapsuleDict`, included in `to_dict()` / canonical hash. `from_dict()` defaults missing values to `"1.0"` for backward compatibility. Specification updated in `spec/README.md`; golden fixtures regenerated.
+- **`validate_capsule_dict` / `validate_capsule` (Python)** and **`validateCapsuleDict` (TypeScript)** — FR-002 runtime validation for CPS content dicts: required keys, section shapes, chain rules, numeric ranges, optional `claimed_hash` integrity check, and optional `strict_unknown_keys` / `strictUnknownKeys`. Exported from `qp_capsule` and `@quantumpipes/capsule`. Invalid vectors updated to include `spec_version` where appropriate; added `missing_spec_version` (16 negative vectors total).
+- **Structured verify (FR-003)** — Python: `SealVerifyCode`, `SealVerificationResult`, `Seal.verify_detailed()`, `Seal.verify_with_key_detailed()`; `verify()` / `verify_with_key()` unchanged (boolean, delegate to detailed). TypeScript: `verifyDetailed()`, `SealVerificationResult`, `SealVerifyCode`; `verify()` returns `(await verifyDetailed(...)).ok`.
+
+---
+
 ## [1.5.2] - 2026-03-18
 
 ### Added

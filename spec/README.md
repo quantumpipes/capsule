@@ -2,7 +2,7 @@
 
 **Version**: 1.0
 **Status**: Active
-**Last Updated**: 2026-03-07
+**Last Updated**: 2026-03-23
 
 ---
 
@@ -26,6 +26,7 @@ A Capsule is a JSON object with the following top-level keys (all required):
 | `parent_id` | string \| null | Parent Capsule UUID for hierarchical linking (e.g., WORKFLOW → AGENT → TOOL), or null for top-level Capsules |
 | `sequence` | integer | Position in the hash chain, 0-indexed. Genesis Capsule is 0, each subsequent Capsule increments by 1. |
 | `previous_hash` | string \| null | SHA3-256 hex digest of the immediately preceding Capsule in the chain, or `null` for the genesis Capsule (sequence 0). This field creates the tamper-evident chain. |
+| `spec_version` | string | CPS wire-format version for parse-time branching (e.g. `"1.0"`). **Included in the canonical content** hashed for SHA3-256. Parsers SHOULD treat records omitting this field as `"1.0"` for backward compatibility unless operating in strict mode. |
 | `trigger` | object | [Trigger Section](#11-trigger-section) |
 | `context` | object | [Context Section](#12-context-section) |
 | `reasoning` | object | [Reasoning Section](#13-reasoning-section) |

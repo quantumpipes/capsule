@@ -39,6 +39,9 @@ export {
   computeHashFromDict,
   seal,
   verify,
+  verifyDetailed,
+  type SealVerificationResult,
+  type SealVerifyCode,
   generateKeyPair,
   getFingerprint,
 } from "./seal.js";
@@ -47,3 +50,9 @@ export {
   type ChainVerificationResult,
   verifyChain,
 } from "./chain.js";
+
+export {
+  type CapsuleValidationResult,
+  type ValidateCapsuleDictOptions,
+  validateCapsuleDict,
+} from "./validation.js";

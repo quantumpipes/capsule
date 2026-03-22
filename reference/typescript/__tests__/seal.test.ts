@@ -12,7 +12,13 @@ import {
   toDict,
 } from "../src/capsule.js";
 import { computeHash } from "../src/seal.js";
-import { seal, verify, generateKeyPair, getFingerprint } from "../src/seal.js";
+import {
+  seal,
+  verify,
+  verifyDetailed,
+  generateKeyPair,
+  getFingerprint,
+} from "../src/seal.js";
 
 describe("Seal", () => {
   it("seals a capsule with hash and signature", async () => {
@@ -88,6 +94,88 @@ describe("Seal", () => {
     await seal(capsule, privateKey);
     capsule.signature = "zz";
     expect(await verify(capsule, pub)).toBe(false);
+  });
+
+  it("verifyDetailed returns ok for valid capsule", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { privateKey, publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    await seal(capsule, privateKey);
+    const r = await verifyDetailed(capsule, pub);
+    expect(r.ok).toBe(true);
+    expect(r.code).toBe("ok");
+  });
+
+  it("verifyDetailed missing_hash when hash empty", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    const r = await verifyDetailed(capsule, pub);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("missing_hash");
+  });
+
+  it("verifyDetailed missing_signature when signature empty", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    capsule.hash = "a".repeat(64);
+    capsule.signature = "";
+    const r = await verifyDetailed(capsule, pub);
+    expect(r.code).toBe("missing_signature");
+  });
+
+  it("verifyDetailed hash_mismatch on tamper", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { privateKey, publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    await seal(capsule, privateKey);
+    capsule.domain = "tampered";
+    const r = await verifyDetailed(capsule, pub);
+    expect(r.code).toBe("hash_mismatch");
+  });
+
+  it("verifyDetailed malformed_hex on bad signature length", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { privateKey, publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    await seal(capsule, privateKey);
+    capsule.signature = "ab";
+    const r = await verifyDetailed(capsule, pub);
+    expect(r.code).toBe("malformed_hex");
+  });
+
+  it("verifyDetailed invalid_signature with wrong key", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const keys1 = generateKeyPair();
+    const keys2 = generateKeyPair();
+    await seal(capsule, keys1.privateKey);
+    const wrongPub = await keys2.publicKey;
+    const r = await verifyDetailed(capsule, wrongPub);
+    expect(r.ok).toBe(false);
+    expect(r.code).toBe("invalid_signature");
+  });
+
+  it("verifyDetailed malformed_hex when hash has wrong length", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { privateKey, publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    await seal(capsule, privateKey);
+    capsule.hash = "a".repeat(62);
+    const r = await verifyDetailed(capsule, pub);
+    expect(r.code).toBe("malformed_hex");
+  });
+
+  it("verify boolean matches verifyDetailed.ok", async () => {
+    const capsule = createCapsule({ type: "agent" });
+    const { privateKey, publicKey } = generateKeyPair();
+    const pub = await publicKey;
+    await seal(capsule, privateKey);
+    const detailed = await verifyDetailed(capsule, pub);
+    expect(await verify(capsule, pub)).toBe(detailed.ok);
+    capsule.domain = "tampered";
+    const d2 = await verifyDetailed(capsule, pub);
+    expect(await verify(capsule, pub)).toBe(d2.ok);
   });
 
   it("hash is deterministic for same content", () => {
