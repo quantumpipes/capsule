@@ -1,11 +1,13 @@
 ---
 title: "API Reference"
 description: "Complete API reference for Capsule: every class, method, parameter, and type."
-date_modified: "2026-03-18"
+date_modified: "2026-03-23"
 ai_context: |
   Complete Python API reference for the qp-capsule package v1.5.1+. Covers Capsule model
-  (6 sections, 8 CapsuleTypes, to_dict/to_sealed_dict/from_dict/from_sealed_dict),
-  Seal (seal, verify, verify_with_key, compute_hash, keyring integration),
+  (6 sections, 8 CapsuleTypes, spec_version, to_dict/to_sealed_dict/from_dict/from_sealed_dict),
+  runtime validation FR-002 (validate_capsule_dict, validate_capsule, CapsuleValidationResult),
+  Seal FR-003 (verify_detailed, verify_with_key_detailed, SealVerifyCode, SealVerificationResult;
+  seal, verify, verify_with_key, compute_hash, keyring integration),
   Keyring (epoch-based key rotation, NIST SP 800-57),
   CapsuleChain (add, verify, seal_and_store), CapsuleStorageProtocol (7 methods),
   CapsuleStorage (SQLite), PostgresCapsuleStorage (multi-tenant), storage schema with
@@ -37,8 +39,13 @@ from qp_capsule import (
     AuthoritySection,
     ExecutionSection, OutcomeSection, ToolCall,
 
+    # Runtime validation (FR-002)
+    CapsuleValidationResult,
+    validate_capsule,
+    validate_capsule_dict,
+
     # Cryptographic Seal
-    Seal, compute_hash,
+    Seal, SealVerificationResult, SealVerifyCode, compute_hash,
 
     # Key Management (v1.3.0+)
     Keyring, Epoch,
@@ -83,6 +90,9 @@ class Capsule:
     # Hash Chain
     sequence: int                     # Position in chain (0-indexed)
     previous_hash: str | None         # SHA3-256 hash of previous Capsule
+
+    # Protocol
+    spec_version: str                 # CPS wire version (default "1.0"; hashed with content)
 
     # The 6 Sections
     trigger: TriggerSection
@@ -279,6 +289,38 @@ class CapsuleType(StrEnum):
 
 ---
 
+## Runtime validation (FR-002)
+
+Validate a CPS **content** dictionary (the shape returned by `Capsule.to_dict()`) before sealing or when ingesting JSON. This is separate from cryptographic `Seal.verify()` — it checks required keys, types, chain rules, numeric ranges, and optional integrity against a claimed content hash.
+
+<!-- VERIFIED: reference/python/src/qp_capsule/validation.py:75-395 -->
+
+### CapsuleValidationResult
+
+```python
+@dataclass(frozen=True)
+class CapsuleValidationResult:
+    ok: bool
+    category: str | None   # e.g. "missing_field", "wrong_type", "integrity_violation"
+    field: str | None      # dotted path when applicable, e.g. "reasoning.confidence"
+    message: str
+```
+
+### Functions
+
+**`validate_capsule_dict(data, *, claimed_hash=None, strict_unknown_keys=False) -> CapsuleValidationResult`**
+
+- **`claimed_hash`**: If set (64-char hex), recomputes SHA3-256 via `compute_hash(data)` and fails with category `integrity_violation` on mismatch (tamper detection).
+- **`strict_unknown_keys`**: If `True`, rejects any top-level key not defined by CPS for capsule content.
+
+**`validate_capsule(capsule: Capsule) -> CapsuleValidationResult`**
+
+Validates `capsule.to_dict()`. Returns `wrong_type` if the argument is not a `Capsule` instance.
+
+Conformance negative vectors live in [`conformance/invalid-fixtures.json`](../../../conformance/invalid-fixtures.json).
+
+---
+
 ## Seal
 
 Cryptographic sealing with two-tier architecture.
@@ -306,18 +348,32 @@ class Seal:
 
 **`pq_enabled: bool`** — Whether post-quantum signatures are active.
 
+### SealVerifyCode and SealVerificationResult (FR-003)
+
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:67-95 -->
+
+`SealVerifyCode` is a `StrEnum` of machine-readable outcomes, including: `ok`, `missing_hash`, `missing_signature`, `malformed_hex`, `hash_mismatch`, `invalid_signature`, `pq_verification_failed`, `pq_library_unavailable`, `unsupported_algorithm` (reserved).
+
+`SealVerificationResult` holds `ok: bool`, `code: SealVerifyCode`, `message: str`, and a `success` property equal to `ok`.
+
 ### Methods
 
-<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:243-300, 338-385, 417-451, 224-241, 234-241 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:243-300, 414-621 -->
 
 **`seal(capsule: Capsule) -> Capsule`**
 Seal a Capsule. Fills `hash`, `signature`, `signature_pq` (if PQ enabled), `signed_at`, `signed_by`. Raises `SealError` on failure.
 
+**`verify_detailed(capsule: Capsule, verify_pq: bool = False) -> SealVerificationResult`**
+Verify a sealed Capsule and return a structured result (same cryptographic steps as `verify()`). Use this when you need a reason code (e.g. hash mismatch vs invalid signature) instead of only `True`/`False`.
+
 **`verify(capsule: Capsule, verify_pq: bool = False) -> bool`**
-Verify a sealed Capsule. Returns `True` if hash and Ed25519 signature are valid. When a `keyring` was provided at construction, the capsule's `signed_by` fingerprint is used to look up the correct epoch's public key, enabling verification across key rotations. Set `verify_pq=True` to also verify the ML-DSA-65 signature.
+Verify a sealed Capsule. Equivalent to `verify_detailed(capsule, verify_pq=verify_pq).ok`. Returns `True` if hash and Ed25519 signature are valid. When a `keyring` was provided at construction, the capsule's `signed_by` fingerprint is used to look up the correct epoch's public key, enabling verification across key rotations. Set `verify_pq=True` to also verify the ML-DSA-65 signature when `signature_pq` is present.
+
+**`verify_with_key_detailed(capsule: Capsule, public_key_hex: str) -> SealVerificationResult`**
+Verify using an explicit Ed25519 public key (64-byte hex = 128 hex chars). Structured counterpart to `verify_with_key()`.
 
 **`verify_with_key(capsule: Capsule, public_key_hex: str) -> bool`**
-Verify a Capsule using a specific Ed25519 public key (hex-encoded). Useful for verifying Capsules sealed by other instances.
+Verify a Capsule using a specific Ed25519 public key (hex-encoded). Returns `verify_with_key_detailed(...).ok`. Useful for verifying Capsules sealed by other instances.
 
 **`get_public_key() -> str`**
 Returns the Ed25519 public key as a 64-character hex string.
@@ -327,7 +383,7 @@ Returns the keyring's `qp_key_XXXX` format when a keyring is available with an a
 
 ### compute_hash
 
-<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:454-467 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:629-640 -->
 
 ```python
 def compute_hash(data: dict) -> str

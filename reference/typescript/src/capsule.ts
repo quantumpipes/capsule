@@ -132,6 +132,8 @@ export interface CapsuleDict {
   parent_id: string | null;
   sequence: number;
   previous_hash: string | null;
+  /** CPS wire-format version (included in canonical hash). */
+  spec_version: string;
   trigger: TriggerSection;
   context: ContextSection;
   reasoning: ReasoningSection;
@@ -236,6 +238,7 @@ export function createCapsule(
     parent_id: null,
     sequence: 0,
     previous_hash: null,
+    spec_version: "1.0",
     ...scalars,
     trigger: createTrigger(trigger),
     context: createContext(context),
@@ -263,6 +266,7 @@ export function toDict(capsule: Capsule): CapsuleDict {
     parent_id: capsule.parent_id,
     sequence: capsule.sequence,
     previous_hash: capsule.previous_hash,
+    spec_version: capsule.spec_version,
     trigger: capsule.trigger,
     context: capsule.context,
     reasoning: capsule.reasoning,

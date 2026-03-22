@@ -1,6 +1,6 @@
 # Capsule Protocol — TypeScript Reference Implementation
 
-> **Status**: Conformant — 16/16 golden fixtures passing, 101 tests, 100% coverage
+> **Status**: Conformant — 16/16 golden fixtures passing; full `npm test` includes validation + seal + conformance suites
 
 TypeScript reference implementation of the [Capsule Protocol Specification (CPS)](../../spec/). Create, seal, verify, and chain Capsules in TypeScript/JavaScript.
 
@@ -66,9 +66,17 @@ console.log(`Sealed: ${capsule.hash.slice(0, 16)}... Valid: ${valid}`);
 |---|---|
 | `computeHash(capsuleDict)` | SHA3-256 of canonical JSON (64-char hex) |
 | `seal(capsule, privateKey)` | Hash + Ed25519 sign |
-| `verify(capsule, publicKey)` | Recompute hash + verify signature |
+| `verify(capsule, publicKey)` | Recompute hash + verify signature (`true` / `false`) |
+| `verifyDetailed(capsule, publicKey)` | Same checks as `verify`, returns `{ ok, code, message }` (FR-003) |
 | `generateKeyPair()` | Ed25519 key pair generation |
 | `getFingerprint(privateKey)` | Public key fingerprint (16 hex chars) |
+
+### Runtime validation (FR-002)
+
+| Export | Description |
+|---|---|
+| `validateCapsuleDict(data, options?)` | Validate CPS content dict: required keys, types, chain rules; optional `claimedHash`, `strictUnknownKeys` |
+| `CapsuleValidationResult` | `{ ok, category, field, message }` |
 
 ### Chain Verification
 
@@ -94,7 +102,7 @@ Both are audited, zero-dependency, pure-JS implementations by Paul Miller.
 This implementation passes all 16 golden test vectors from [`conformance/fixtures.json`](../../conformance/fixtures.json).
 
 ```bash
-npm test    # 101 tests: 47 conformance + 22 canonical + 15 capsule + 11 seal + 6 chain
+npm test    # runs conformance, canonical, capsule, seal (incl. verifyDetailed), validation, invalid-fixtures, chain, exports
 ```
 
 ### Known TypeScript Pitfalls (CPS Section 2)

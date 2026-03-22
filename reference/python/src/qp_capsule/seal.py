@@ -35,7 +35,9 @@ import hashlib
 import json
 import os
 import types
+from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -60,6 +62,66 @@ except ImportError:  # pragma: no cover
 def _pq_available() -> bool:
     """Check if post-quantum cryptography is available."""
     return _oqs_module is not None
+
+
+class SealVerifyCode(StrEnum):
+    """Machine-readable result of :meth:`Seal.verify_detailed`."""
+
+    OK = "ok"
+    MISSING_HASH = "missing_hash"
+    MISSING_SIGNATURE = "missing_signature"
+    MALFORMED_HEX = "malformed_hex"
+    HASH_MISMATCH = "hash_mismatch"
+    INVALID_SIGNATURE = "invalid_signature"
+    PQ_VERIFICATION_FAILED = "pq_verification_failed"
+    PQ_LIBRARY_UNAVAILABLE = "pq_library_unavailable"
+    UNSUPPORTED_ALGORITHM = "unsupported_algorithm"
+
+
+@dataclass(frozen=True)
+class SealVerificationResult:
+    """Structured outcome of verify_detailed / verify_with_key_detailed."""
+
+    ok: bool
+    code: SealVerifyCode
+    message: str = ""
+
+    @property
+    def success(self) -> bool:
+        return self.ok
+
+
+def _try_hex_bytes(
+    value: str,
+    expected_len: int | None,
+) -> tuple[bytes, SealVerificationResult | None]:
+    """
+    Parse hex string to bytes.
+
+    Returns:
+        (bytes, None) on success, or (_, error) on failure.
+    """
+    try:
+        raw = bytes.fromhex(value)
+    except ValueError:
+        return (
+            b"",
+            SealVerificationResult(
+                False,
+                SealVerifyCode.MALFORMED_HEX,
+                "value is not valid hexadecimal",
+            ),
+        )
+    if expected_len is not None and len(raw) != expected_len:
+        return (
+            b"",
+            SealVerificationResult(
+                False,
+                SealVerifyCode.MALFORMED_HEX,
+                f"expected {expected_len} bytes after decoding hex",
+            ),
+        )
+    return raw, None
 
 
 class Seal:
@@ -349,6 +411,91 @@ class Seal:
         except Exception:
             return None
 
+    def verify_detailed(self, capsule: Capsule, verify_pq: bool = False) -> SealVerificationResult:
+        """
+        Verify a sealed Capsule and return a structured result (FR-003).
+
+        Same cryptographic steps as :meth:`verify`, but returns :class:`SealVerificationResult`
+        with a :class:`SealVerifyCode` instead of only ``True``/``False``.
+        """
+        if not capsule.hash:
+            return SealVerificationResult(
+                False, SealVerifyCode.MISSING_HASH, "capsule has no hash field"
+            )
+        if not capsule.signature:
+            return SealVerificationResult(
+                False, SealVerifyCode.MISSING_SIGNATURE, "capsule has no signature field"
+            )
+
+        _, herr = _try_hex_bytes(capsule.hash, 32)
+        if herr is not None:
+            return herr
+        _, serr = _try_hex_bytes(capsule.signature, 64)
+        if serr is not None:
+            return serr
+
+        try:
+            content = json.dumps(
+                capsule.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
+            computed_hash = hashlib.sha3_256(content.encode("utf-8")).hexdigest()
+        except Exception as e:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.HASH_MISMATCH,
+                f"could not compute content hash: {e!s}",
+            )
+
+        if computed_hash != capsule.hash:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.HASH_MISMATCH,
+                "recomputed hash does not match stored hash",
+            )
+
+        try:
+            resolve_key: VerifyKey | None = None
+            if self._keyring is not None and capsule.signed_by:
+                pub_hex = self._keyring.lookup_public_key(capsule.signed_by)
+                if pub_hex is not None:
+                    resolve_key = VerifyKey(bytes.fromhex(pub_hex))
+
+            if resolve_key is None:
+                _, resolve_key = self._ensure_keys()
+
+            resolve_key.verify(
+                capsule.hash.encode("utf-8"),
+                bytes.fromhex(capsule.signature),
+            )
+        except BadSignatureError:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.INVALID_SIGNATURE,
+                "Ed25519 signature verification failed",
+            )
+        except Exception as e:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.INVALID_SIGNATURE,
+                f"Ed25519 verification error: {e!s}",
+            )
+
+        if verify_pq and capsule.signature_pq:
+            if not self._verify_dilithium(capsule.hash, capsule.signature_pq):
+                if _oqs_module is None:
+                    return SealVerificationResult(
+                        False,
+                        SealVerifyCode.PQ_LIBRARY_UNAVAILABLE,
+                        "post-quantum verification requested but oqs is not installed",
+                    )
+                return SealVerificationResult(
+                    False,
+                    SealVerifyCode.PQ_VERIFICATION_FAILED,
+                    "ML-DSA-65 signature verification failed",
+                )
+
+        return SealVerificationResult(True, SealVerifyCode.OK, "")
+
     def verify(self, capsule: Capsule, verify_pq: bool = False) -> bool:
         """
         Verify a sealed Capsule.
@@ -371,46 +518,7 @@ class Seal:
         Returns:
             True if seal is valid, False otherwise
         """
-        if not capsule.is_sealed():
-            return False
-
-        try:
-            # 1. Recompute hash from content
-            content = json.dumps(
-                capsule.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-            )
-            computed_hash = hashlib.sha3_256(content.encode("utf-8")).hexdigest()
-
-            # 2. Check hash matches (detect content tampering)
-            if computed_hash != capsule.hash:
-                return False
-
-            # 3. Determine verification key (keyring lookup or local key)
-            resolve_key: VerifyKey | None = None
-            if self._keyring is not None and capsule.signed_by:
-                pub_hex = self._keyring.lookup_public_key(capsule.signed_by)
-                if pub_hex is not None:
-                    resolve_key = VerifyKey(bytes.fromhex(pub_hex))
-
-            if resolve_key is None:
-                _, resolve_key = self._ensure_keys()
-
-            # 4. Verify Ed25519 signature
-            resolve_key.verify(
-                capsule.hash.encode("utf-8"),
-                bytes.fromhex(capsule.signature),
-            )
-
-            # 5. Verify post-quantum signature (if requested and present)
-            if verify_pq and capsule.signature_pq:
-                return self._verify_dilithium(capsule.hash, capsule.signature_pq)
-
-            return True
-
-        except BadSignatureError:
-            return False
-        except Exception:
-            return False
+        return self.verify_detailed(capsule, verify_pq=verify_pq).ok
 
     def _verify_dilithium(self, hash_value: str, signature_hex: str) -> bool:
         """
@@ -438,6 +546,70 @@ class Seal:
         except Exception:
             return False
 
+    def verify_with_key_detailed(
+        self, capsule: Capsule, public_key_hex: str
+    ) -> SealVerificationResult:
+        """Verify using an explicit Ed25519 public key (structured result, FR-003)."""
+        if not capsule.hash:
+            return SealVerificationResult(
+                False, SealVerifyCode.MISSING_HASH, "capsule has no hash field"
+            )
+        if not capsule.signature:
+            return SealVerificationResult(
+                False, SealVerifyCode.MISSING_SIGNATURE, "capsule has no signature field"
+            )
+
+        _, herr = _try_hex_bytes(capsule.hash, 32)
+        if herr is not None:
+            return herr
+        _, serr = _try_hex_bytes(capsule.signature, 64)
+        if serr is not None:
+            return serr
+
+        try:
+            content = json.dumps(
+                capsule.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            )
+            computed_hash = hashlib.sha3_256(content.encode("utf-8")).hexdigest()
+        except Exception as e:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.HASH_MISMATCH,
+                f"could not compute content hash: {e!s}",
+            )
+
+        if computed_hash != capsule.hash:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.HASH_MISMATCH,
+                "recomputed hash does not match stored hash",
+            )
+
+        pk_raw, pk_err = _try_hex_bytes(public_key_hex, 32)
+        if pk_err is not None:
+            return pk_err
+
+        try:
+            verify_key = VerifyKey(pk_raw)
+            verify_key.verify(
+                capsule.hash.encode("utf-8"),
+                bytes.fromhex(capsule.signature),
+            )
+        except BadSignatureError:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.INVALID_SIGNATURE,
+                "Ed25519 signature verification failed",
+            )
+        except Exception as e:
+            return SealVerificationResult(
+                False,
+                SealVerifyCode.INVALID_SIGNATURE,
+                f"Ed25519 verification error: {e!s}",
+            )
+
+        return SealVerificationResult(True, SealVerifyCode.OK, "")
+
     def verify_with_key(self, capsule: Capsule, public_key_hex: str) -> bool:
         """
         Verify a Capsule with a specific Ed25519 public key.
@@ -451,30 +623,7 @@ class Seal:
         Returns:
             True if seal is valid, False otherwise
         """
-        if not capsule.is_sealed():
-            return False
-
-        try:
-            # Recompute hash
-            content = json.dumps(
-                capsule.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-            )
-            computed_hash = hashlib.sha3_256(content.encode("utf-8")).hexdigest()
-
-            if computed_hash != capsule.hash:
-                return False
-
-            # Verify Ed25519 with provided key
-            verify_key = VerifyKey(bytes.fromhex(public_key_hex))
-            verify_key.verify(
-                capsule.hash.encode("utf-8"),
-                bytes.fromhex(capsule.signature),
-            )
-
-            return True
-
-        except (BadSignatureError, Exception):
-            return False
+        return self.verify_with_key_detailed(capsule, public_key_hex).ok
 
 
 def compute_hash(data: dict[str, Any]) -> str:

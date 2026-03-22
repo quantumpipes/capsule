@@ -7,11 +7,12 @@ These tests cover the Tier 1 (Ed25519-only) behavior.
 
 import tempfile
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from qp_capsule.capsule import Capsule, ReasoningSection, TriggerSection
-from qp_capsule.seal import Seal, compute_hash
+from qp_capsule.seal import Seal, SealVerifyCode, compute_hash
 
 
 @pytest.fixture
@@ -188,6 +189,157 @@ class TestVerification:
         sample_capsule.signature = "b" * len(sample_capsule.signature)
 
         assert seal.verify(sample_capsule) is False
+
+
+class TestVerifyBooleanMatchesDetailed:
+    """verify() must match verify_detailed().ok for all paths exercised here."""
+
+    def test_matches_when_valid(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        assert seal.verify(sample_capsule) == seal.verify_detailed(sample_capsule).ok
+
+    def test_matches_when_unsealed(self, seal, sample_capsule):
+        assert seal.verify(sample_capsule) == seal.verify_detailed(sample_capsule).ok
+
+    def test_matches_when_tampered(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.domain = "x"
+        assert seal.verify(sample_capsule) == seal.verify_detailed(sample_capsule).ok
+
+    def test_matches_with_key(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        pub = seal.get_public_key()
+        assert seal.verify_with_key(sample_capsule, pub) == seal.verify_with_key_detailed(
+            sample_capsule, pub
+        ).ok
+
+
+class TestVerifyDetailed:
+    """Structured verification (FR-003)."""
+
+    def test_ok(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        r = seal.verify_detailed(sample_capsule)
+        assert r.ok
+        assert r.code == SealVerifyCode.OK
+        assert r.success is True
+
+    def test_missing_hash(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.hash = ""
+        r = seal.verify_detailed(sample_capsule)
+        assert not r.ok
+        assert r.code == SealVerifyCode.MISSING_HASH
+
+    def test_missing_signature(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature = ""
+        r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.MISSING_SIGNATURE
+
+    def test_malformed_hash_hex(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.hash = "zz" + "a" * 62
+        r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.MALFORMED_HEX
+
+    def test_malformed_hash_wrong_byte_length(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.hash = "a" * 62
+        r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.MALFORMED_HEX
+
+    def test_malformed_signature_hex(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature = "qq"
+        r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.MALFORMED_HEX
+
+    def test_hash_mismatch(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.reasoning.reasoning = "tampered"
+        r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.HASH_MISMATCH
+
+    def test_invalid_signature(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature = "ab" * 64
+        r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.INVALID_SIGNATURE
+
+    def test_verify_with_key_detailed_ok(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        pub = seal.get_public_key()
+        r = seal.verify_with_key_detailed(sample_capsule, pub)
+        assert r.ok and r.code == SealVerifyCode.OK
+
+    def test_verify_with_key_detailed_bad_public_key_hex(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        r = seal.verify_with_key_detailed(sample_capsule, "not-a-key")
+        assert r.code == SealVerifyCode.MALFORMED_HEX
+
+    def test_verify_detailed_pq_library_unavailable(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature_pq = "ab" * 128
+        with patch("qp_capsule.seal._oqs_module", None):
+            with patch.object(seal, "_verify_dilithium", return_value=False):
+                r = seal.verify_detailed(sample_capsule, verify_pq=True)
+                assert r.code == SealVerifyCode.PQ_LIBRARY_UNAVAILABLE
+
+    def test_verify_detailed_pq_verification_failed(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature_pq = "ab" * 128
+        mock_oqs = MagicMock()
+        with patch("qp_capsule.seal._oqs_module", mock_oqs):
+            with patch.object(seal, "_verify_dilithium", return_value=False):
+                r = seal.verify_detailed(sample_capsule, verify_pq=True)
+                assert r.code == SealVerifyCode.PQ_VERIFICATION_FAILED
+
+    def test_verify_detailed_ed25519_non_signature_exception(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        with patch("qp_capsule.seal.VerifyKey.verify", side_effect=RuntimeError("boom")):
+            r = seal.verify_detailed(sample_capsule)
+        assert r.code == SealVerifyCode.INVALID_SIGNATURE
+        assert "Ed25519 verification error" in r.message
+
+    def test_verify_with_key_detailed_missing_hash(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.hash = ""
+        r = seal.verify_with_key_detailed(sample_capsule, seal.get_public_key())
+        assert r.code == SealVerifyCode.MISSING_HASH
+
+    def test_verify_with_key_detailed_missing_signature(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature = ""
+        r = seal.verify_with_key_detailed(sample_capsule, seal.get_public_key())
+        assert r.code == SealVerifyCode.MISSING_SIGNATURE
+
+    def test_verify_with_key_detailed_malformed_hash_hex(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.hash = "zz" + "a" * 62
+        r = seal.verify_with_key_detailed(sample_capsule, seal.get_public_key())
+        assert r.code == SealVerifyCode.MALFORMED_HEX
+
+    def test_verify_with_key_detailed_malformed_signature_hex(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        sample_capsule.signature = "qq"
+        r = seal.verify_with_key_detailed(sample_capsule, seal.get_public_key())
+        assert r.code == SealVerifyCode.MALFORMED_HEX
+
+    def test_verify_with_key_detailed_hash_compute_error(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        with patch("qp_capsule.seal.json.dumps", side_effect=TypeError("boom")):
+            r = seal.verify_with_key_detailed(sample_capsule, seal.get_public_key())
+        assert r.code == SealVerifyCode.HASH_MISMATCH
+        assert "could not compute content hash" in r.message
+
+    def test_verify_with_key_detailed_verify_non_signature_exception(self, seal, sample_capsule):
+        seal.seal(sample_capsule)
+        pub = seal.get_public_key()
+        with patch("qp_capsule.seal.VerifyKey.verify", side_effect=RuntimeError("boom")):
+            r = seal.verify_with_key_detailed(sample_capsule, pub)
+        assert r.code == SealVerifyCode.INVALID_SIGNATURE
+        assert "Ed25519 verification error" in r.message
 
 
 class TestPublicKey:

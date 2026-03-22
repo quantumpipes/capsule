@@ -101,7 +101,7 @@ The URI spec is at [`spec/uri-scheme.md`](../spec/uri-scheme.md).
 
 ## Invalid Capsule Fixtures
 
-The `invalid-fixtures.json` file provides 15 test vectors for **malformed or structurally invalid** capsules. A conformant verifier SHOULD reject each of these.
+The `invalid-fixtures.json` file provides 16 test vectors for **malformed or structurally invalid** capsules. A conformant verifier SHOULD reject each of these.
 
 Each entry contains:
 

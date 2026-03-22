@@ -36,7 +36,7 @@ Cross-language SDKs: Python, TypeScript, Go, Rust
 Spec: https://github.com/quantumpipes/capsule
 """
 
-__version__ = "1.5.2"
+__version__ = "1.5.3"
 __author__ = "Quantum Pipes Technologies, LLC"
 __license__ = "Apache-2.0"
 
@@ -64,7 +64,7 @@ from qp_capsule.exceptions import (
 )
 from qp_capsule.keyring import Epoch, Keyring
 from qp_capsule.protocol import CapsuleStorageProtocol
-from qp_capsule.seal import Seal, compute_hash
+from qp_capsule.seal import Seal, SealVerificationResult, SealVerifyCode, compute_hash
 
 with contextlib.suppress(ImportError):
     from qp_capsule.chain import CapsuleChain, ChainVerificationResult
@@ -76,6 +76,7 @@ with contextlib.suppress(ImportError):
     from qp_capsule.storage_pg import CapsuleStoragePG, PostgresCapsuleStorage
 
 from qp_capsule.audit import Capsules
+from qp_capsule.validation import CapsuleValidationResult, validate_capsule, validate_capsule_dict
 
 __all__ = [
     # Version
@@ -94,6 +95,8 @@ __all__ = [
     # Seal
     "Seal",
     "compute_hash",
+    "SealVerifyCode",
+    "SealVerificationResult",
     # Keyring
     "Keyring",
     "Epoch",
@@ -115,4 +118,8 @@ __all__ = [
     "KeyringError",
     # High-Level API
     "Capsules",
+    # Validation (FR-002)
+    "CapsuleValidationResult",
+    "validate_capsule_dict",
+    "validate_capsule",
 ]

@@ -2,7 +2,7 @@
   "version": "1.0",
   "specification": "Capsule Protocol Specification v1.0",
   "generated_by": "Python reference implementation (qp-capsule)",
-  "generated_at": "2026-03-08T15:09:35.637607+00:00",
+  "generated_at": "2026-03-22T06:17:01.011997+00:00",
   "description": "Golden test vectors for cross-language Capsule verification. Each fixture contains a capsule_dict, the expected canonical_json, and the expected sha3_256_hash. A conformant implementation must produce byte-identical canonical_json and matching hash for each fixture.",
   "fixtures": [
     {
@@ -15,6 +15,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "",
@@ -59,8 +60,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"pending\",\"summary\":\"\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"\",\"source\":\"\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "e6266f6d907a02e1f3531dc354765c0bca506180b91c1f5892a544b81bcf8dee"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"pending\",\"summary\":\"\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"\",\"source\":\"\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "8c71e187dfbffca067265f576d9fb72ee8a223c3dff801dd7c5dd8fcb915f2cd"
     },
     {
       "name": "full",
@@ -72,6 +73,7 @@
         "parent_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         "sequence": 5,
         "previous_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "user_alice",
@@ -220,8 +222,8 @@
           }
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":\"user_alice\",\"chain\":[{\"approver\":\"auto_policy\",\"decision\":\"escalate\",\"level\":1},{\"approver\":\"user_alice\",\"decision\":\"approved\",\"level\":2}],\"escalation_reason\":\"Production deployment requires human approval\",\"policy_reference\":\"POLICY-PROD-DEPLOY-001\",\"type\":\"human_approved\"},\"context\":{\"agent_id\":\"executor_001\",\"environment\":{\"cwd\":\"/workspace\",\"os\":\"linux\",\"python\":\"3.12\"},\"session_id\":\"sess_def456\"},\"domain\":\"goals\",\"execution\":{\"duration_ms\":5700,\"resources_used\":{\"api_calls\":3,\"cpu_seconds\":2.5},\"tool_calls\":[{\"arguments\":{\"manifest\":\"deploy-v2.4.yaml\",\"namespace\":\"production\"},\"duration_ms\":4500,\"error\":null,\"result\":{\"pods_created\":3,\"service_updated\":true},\"success\":true,\"tool\":\"kubectl_apply\"},{\"arguments\":{\"timeout\":30,\"url\":\"https://api.example.com/health\"},\"duration_ms\":1200,\"error\":null,\"result\":{\"latency_ms\":45,\"status\":200},\"success\":true,\"tool\":\"health_check\"}]},\"id\":\"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\"outcome\":{\"error\":null,\"metrics\":{\"cost_usd\":0.0042,\"latency_ms\":5700,\"tokens_in\":1500,\"tokens_out\":350},\"result\":{\"endpoint\":\"https://api.example.com\",\"replicas\":3,\"version\":\"2.4\"},\"side_effects\":[\"Updated production deployment\",\"DNS records updated\"],\"status\":\"success\",\"summary\":\"Deployed v2.4 to production with 3 replicas, all health checks passing\"},\"parent_id\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"previous_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"reasoning\":{\"analysis\":\"Production deployment requires blue-green strategy.\",\"confidence\":0.95,\"model\":\"anthropic/claude-sonnet-4-20250514\",\"options\":[{\"cons\":[\"Requires double resources temporarily\"],\"description\":\"Blue-green deployment\",\"estimated_impact\":{\"scope\":\"production\",\"severity\":\"medium\"},\"feasibility\":0.9,\"id\":\"opt_0\",\"pros\":[\"Zero downtime\",\"Easy rollback\"],\"rejection_reason\":\"\",\"risks\":[\"DNS propagation delay\"],\"selected\":true},{\"cons\":[\"Brief downtime possible\"],\"description\":\"Rolling update\",\"estimated_impact\":{\"scope\":\"production\",\"severity\":\"low\"},\"feasibility\":0.7,\"id\":\"opt_1\",\"pros\":[\"Simple\"],\"rejection_reason\":\"Higher risk of downtime\",\"risks\":[\"Partial deployment state\"],\"selected\":false}],\"options_considered\":[\"Blue-green deployment\",\"Rolling update\"],\"prompt_hash\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"reasoning\":\"Blue-green provides zero-downtime with easy rollback capability\",\"selected_option\":\"Blue-green deployment\"},\"sequence\":5,\"trigger\":{\"correlation_id\":\"corr_abc123\",\"request\":\"Deploy service v2.4 to production\",\"source\":\"user_alice\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":\"user_alice\"},\"type\":\"agent\"}",
-      "sha3_256_hash": "f4e04d02aadacf1cc051d4ce10b72c486827d5f7036ee59e16309ebd923cd194"
+      "canonical_json": "{\"authority\":{\"approver\":\"user_alice\",\"chain\":[{\"approver\":\"auto_policy\",\"decision\":\"escalate\",\"level\":1},{\"approver\":\"user_alice\",\"decision\":\"approved\",\"level\":2}],\"escalation_reason\":\"Production deployment requires human approval\",\"policy_reference\":\"POLICY-PROD-DEPLOY-001\",\"type\":\"human_approved\"},\"context\":{\"agent_id\":\"executor_001\",\"environment\":{\"cwd\":\"/workspace\",\"os\":\"linux\",\"python\":\"3.12\"},\"session_id\":\"sess_def456\"},\"domain\":\"goals\",\"execution\":{\"duration_ms\":5700,\"resources_used\":{\"api_calls\":3,\"cpu_seconds\":2.5},\"tool_calls\":[{\"arguments\":{\"manifest\":\"deploy-v2.4.yaml\",\"namespace\":\"production\"},\"duration_ms\":4500,\"error\":null,\"result\":{\"pods_created\":3,\"service_updated\":true},\"success\":true,\"tool\":\"kubectl_apply\"},{\"arguments\":{\"timeout\":30,\"url\":\"https://api.example.com/health\"},\"duration_ms\":1200,\"error\":null,\"result\":{\"latency_ms\":45,\"status\":200},\"success\":true,\"tool\":\"health_check\"}]},\"id\":\"b2c3d4e5-f6a7-8901-bcde-f12345678901\",\"outcome\":{\"error\":null,\"metrics\":{\"cost_usd\":0.0042,\"latency_ms\":5700,\"tokens_in\":1500,\"tokens_out\":350},\"result\":{\"endpoint\":\"https://api.example.com\",\"replicas\":3,\"version\":\"2.4\"},\"side_effects\":[\"Updated production deployment\",\"DNS records updated\"],\"status\":\"success\",\"summary\":\"Deployed v2.4 to production with 3 replicas, all health checks passing\"},\"parent_id\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"previous_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"reasoning\":{\"analysis\":\"Production deployment requires blue-green strategy.\",\"confidence\":0.95,\"model\":\"anthropic/claude-sonnet-4-20250514\",\"options\":[{\"cons\":[\"Requires double resources temporarily\"],\"description\":\"Blue-green deployment\",\"estimated_impact\":{\"scope\":\"production\",\"severity\":\"medium\"},\"feasibility\":0.9,\"id\":\"opt_0\",\"pros\":[\"Zero downtime\",\"Easy rollback\"],\"rejection_reason\":\"\",\"risks\":[\"DNS propagation delay\"],\"selected\":true},{\"cons\":[\"Brief downtime possible\"],\"description\":\"Rolling update\",\"estimated_impact\":{\"scope\":\"production\",\"severity\":\"low\"},\"feasibility\":0.7,\"id\":\"opt_1\",\"pros\":[\"Simple\"],\"rejection_reason\":\"Higher risk of downtime\",\"risks\":[\"Partial deployment state\"],\"selected\":false}],\"options_considered\":[\"Blue-green deployment\",\"Rolling update\"],\"prompt_hash\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"reasoning\":\"Blue-green provides zero-downtime with easy rollback capability\",\"selected_option\":\"Blue-green deployment\"},\"sequence\":5,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":\"corr_abc123\",\"request\":\"Deploy service v2.4 to production\",\"source\":\"user_alice\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":\"user_alice\"},\"type\":\"agent\"}",
+      "sha3_256_hash": "755b20bec1a5019ecca17dbf03270160050fa3579d2a0e6f5a0d04c133df64f4"
     },
     {
       "name": "kill_switch",
@@ -233,6 +235,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "system",
           "source": "kill_switch",
@@ -280,8 +283,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"system\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c3d4e5f6-a7b8-9012-cdef-123456789012\",\"outcome\":{\"error\":\"Kill switch activated: mode=hard, reason=unexpected behavior\",\"metrics\":{},\"result\":null,\"side_effects\":[\"All running agents terminated\",\"Pending tasks cancelled\"],\"status\":\"blocked\",\"summary\":\"All agents terminated via hard kill\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Emergency stop: unexpected behavior detected\",\"source\":\"kill_switch\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"kill\"}",
-      "sha3_256_hash": "636f3080c16d828a67a07972c3e47a33b423545658a2c09076ebb9aa3a531e26"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"system\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c3d4e5f6-a7b8-9012-cdef-123456789012\",\"outcome\":{\"error\":\"Kill switch activated: mode=hard, reason=unexpected behavior\",\"metrics\":{},\"result\":null,\"side_effects\":[\"All running agents terminated\",\"Pending tasks cancelled\"],\"status\":\"blocked\",\"summary\":\"All agents terminated via hard kill\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Emergency stop: unexpected behavior detected\",\"source\":\"kill_switch\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"kill\"}",
+      "sha3_256_hash": "b12fc10e6c73e49940dc4b6a901742c57d7ffd37442a387d0166ee77a4c028d1"
     },
     {
       "name": "tool_invocation",
@@ -293,6 +296,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "agent",
           "source": "executor_001",
@@ -348,8 +352,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":2,\"resources_used\":{},\"tool_calls\":[{\"arguments\":{\"path\":\"/etc/hostname\"},\"duration_ms\":2,\"error\":null,\"result\":\"prod-server-01\",\"success\":true,\"tool\":\"file_read\"}]},\"id\":\"d4e5f6a7-b8c9-0123-defa-234567890123\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":\"prod-server-01\",\"side_effects\":[],\"status\":\"success\",\"summary\":\"Read /etc/hostname\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Read file contents\",\"source\":\"executor_001\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"agent\",\"user_id\":null},\"type\":\"tool\"}",
-      "sha3_256_hash": "1de4b4cd4a9512c55f28ad3dd3dce2ff31c28062d4e63f55125cfa4c631083ba"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":2,\"resources_used\":{},\"tool_calls\":[{\"arguments\":{\"path\":\"/etc/hostname\"},\"duration_ms\":2,\"error\":null,\"result\":\"prod-server-01\",\"success\":true,\"tool\":\"file_read\"}]},\"id\":\"d4e5f6a7-b8c9-0123-defa-234567890123\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":\"prod-server-01\",\"side_effects\":[],\"status\":\"success\",\"summary\":\"Read /etc/hostname\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Read file contents\",\"source\":\"executor_001\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"agent\",\"user_id\":null},\"type\":\"tool\"}",
+      "sha3_256_hash": "7faf4d8f3139081993a1fc81dd157bb59101a26dbae6475db58f7158c57207c7"
     },
     {
       "name": "chat_interaction",
@@ -361,6 +365,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "hub_chat",
@@ -422,8 +427,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"chat-agent\",\"environment\":{\"model\":\"gpt-4o\",\"turn\":3},\"session_id\":\"sess-chat-001\"},\"domain\":\"chat\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"e5f6a7b8-c9d0-1234-efab-345678901234\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":\"Paris\",\"side_effects\":[],\"status\":\"success\",\"summary\":\"Answered: Paris\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.99,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"Answer from knowledge\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true}],\"options_considered\":[\"Answer from knowledge\"],\"prompt_hash\":null,\"reasoning\":\"Factual question with known answer\",\"selected_option\":\"Answer from knowledge\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"What is the capital of France?\",\"source\":\"hub_chat\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":\"user@example.com\"},\"type\":\"chat\"}",
-      "sha3_256_hash": "96597ff0096dd62b5b71de237d91fc55bbeb95d373e1ce611f42c4ef0a9f718a"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"chat-agent\",\"environment\":{\"model\":\"gpt-4o\",\"turn\":3},\"session_id\":\"sess-chat-001\"},\"domain\":\"chat\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"e5f6a7b8-c9d0-1234-efab-345678901234\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":\"Paris\",\"side_effects\":[],\"status\":\"success\",\"summary\":\"Answered: Paris\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.99,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"Answer from knowledge\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true}],\"options_considered\":[\"Answer from knowledge\"],\"prompt_hash\":null,\"reasoning\":\"Factual question with known answer\",\"selected_option\":\"Answer from knowledge\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"What is the capital of France?\",\"source\":\"hub_chat\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":\"user@example.com\"},\"type\":\"chat\"}",
+      "sha3_256_hash": "091d4da0f51e0dd6f7217b5a817906f06b75569526e8cdba7c58349fefef08e4"
     },
     {
       "name": "workflow_hierarchy",
@@ -435,6 +440,7 @@
         "parent_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "system",
           "source": "orchestrator",
@@ -479,8 +485,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"f6a7b8c9-d0e1-2345-fabc-456789012345\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Pipeline completed\"},\"parent_id\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Execute deployment pipeline\",\"source\":\"orchestrator\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"workflow\"}",
-      "sha3_256_hash": "4cb02d655fc06bb27155a696086d755891c403f62d090c7f0aa111c6f23e180f"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"f6a7b8c9-d0e1-2345-fabc-456789012345\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Pipeline completed\"},\"parent_id\":\"a1b2c3d4-e5f6-7890-abcd-ef1234567890\",\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Execute deployment pipeline\",\"source\":\"orchestrator\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"workflow\"}",
+      "sha3_256_hash": "e1788855486070ea220720e93dcb02a3c088508744f256ba81392ee68a7fbc67"
     },
     {
       "name": "unicode_strings",
@@ -492,6 +498,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "utilisateur_français",
@@ -565,8 +572,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"agent-α\",\"environment\":{\"note\":\"café ☃ ❤\",\"region\":\"東京\"},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"a7b8c9d0-e1f2-3456-abcd-567890123456\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Déploiement réussi ✓\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"Évaluation des risques terminée\",\"confidence\":0.88,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"Étape 1: préparation\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":false},{\"cons\":[],\"description\":\"Étape 2: exécution\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_1\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true}],\"options_considered\":[\"Étape 1: préparation\",\"Étape 2: exécution\"],\"prompt_hash\":null,\"reasoning\":\"L'option présente le meilleur rapport bénéfice/risque\",\"selected_option\":\"Étape 2: exécution\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Déployer le service à la production — priorité haute\",\"source\":\"utilisateur_français\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "94184d174089c6b5eef4809340681eb1251b8e74a6c080033d9f6fd2d3977c0f"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"agent-α\",\"environment\":{\"note\":\"café ☃ ❤\",\"region\":\"東京\"},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"a7b8c9d0-e1f2-3456-abcd-567890123456\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Déploiement réussi ✓\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"Évaluation des risques terminée\",\"confidence\":0.88,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"Étape 1: préparation\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":false},{\"cons\":[],\"description\":\"Étape 2: exécution\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_1\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true}],\"options_considered\":[\"Étape 1: préparation\",\"Étape 2: exécution\"],\"prompt_hash\":null,\"reasoning\":\"L'option présente le meilleur rapport bénéfice/risque\",\"selected_option\":\"Étape 2: exécution\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Déployer le service à la production — priorité haute\",\"source\":\"utilisateur_français\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "877775878811c65929ae682c8d644158c26f8a2772142ca52e6850016a86abb5"
     },
     {
       "name": "fractional_timestamp",
@@ -578,6 +585,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "system",
           "source": "heartbeat",
@@ -622,8 +630,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"system\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"b8c9d0e1-f2a3-4567-bcde-678901234567\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"All systems nominal\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"System health check\",\"source\":\"heartbeat\",\"timestamp\":\"2026-06-15T08:30:45.123456+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"system\"}",
-      "sha3_256_hash": "d0b22cecc78b8dd5e46b8b3d7b3a827c5653f98be79c1f05cf0ddad13550d686"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"system\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"b8c9d0e1-f2a3-4567-bcde-678901234567\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"All systems nominal\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"System health check\",\"source\":\"heartbeat\",\"timestamp\":\"2026-06-15T08:30:45.123456+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"system\"}",
+      "sha3_256_hash": "cfd1b19b9ecc1f54faebebe7dc133fae21b84c131238ed729b54175d333484c2"
     },
     {
       "name": "empty_vs_null",
@@ -635,6 +643,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "",
@@ -679,8 +688,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c9d0e1f2-a3b4-5678-cdef-789012345678\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"pending\",\"summary\":\"\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"\",\"source\":\"\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "5ef51fd85ceb57f2f4c05fd5be68d60975ab53dfb9aa8358ef7793a51c6699dc"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c9d0e1f2-a3b4-5678-cdef-789012345678\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"pending\",\"summary\":\"\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"\",\"source\":\"\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "921c7dd9af3f9a9354618f3b95f30ef8b0d7092289ddd7e992379c4a15f1b5ec"
     },
     {
       "name": "confidence_one",
@@ -692,6 +701,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "agent",
           "source": "self",
@@ -750,8 +760,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"d0e1f2a3-b4c5-6789-defa-890123456789\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Completed with full confidence\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":1.0,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"Only option\",\"estimated_impact\":{},\"feasibility\":1.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true}],\"options_considered\":[\"Only option\"],\"prompt_hash\":null,\"reasoning\":\"No alternatives\",\"selected_option\":\"Only option\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Self-evaluation\",\"source\":\"self\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"agent\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "7ade287b80ce652ad44183ebb159c5120f0843b5cd80458443082a4813d0e4a0"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"d0e1f2a3-b4c5-6789-defa-890123456789\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Completed with full confidence\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":1.0,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"Only option\",\"estimated_impact\":{},\"feasibility\":1.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true}],\"options_considered\":[\"Only option\"],\"prompt_hash\":null,\"reasoning\":\"No alternatives\",\"selected_option\":\"Only option\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Self-evaluation\",\"source\":\"self\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"agent\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "af8e95200edb98c8c9f1050f21e2f14303505fbd6f242f0e877db298ae5a3af6"
     },
     {
       "name": "deep_nesting",
@@ -763,6 +773,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "system",
           "source": "scheduler",
@@ -832,8 +843,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"deep-agent\",\"environment\":{\"a_first\":\"sorted first\",\"config\":{\"array\":[3,1,2],\"nested\":{\"deep\":{\"flag\":true,\"value\":42}}},\"z_last\":\"sorted last\"},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":100,\"resources_used\":{\"cpu\":{\"cores\":4,\"utilization\":0.75},\"memory\":{\"avg_mb\":128,\"peak_mb\":256}},\"tool_calls\":[]},\"id\":\"e1f2a3b4-c5d6-7890-efab-901234567890\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Nested config processed\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Run nested config job\",\"source\":\"scheduler\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "8f6fb106e0defb2697e9f05c06fffb8123234e7b2f229b5d04a9a51ff16845f5"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"deep-agent\",\"environment\":{\"a_first\":\"sorted first\",\"config\":{\"array\":[3,1,2],\"nested\":{\"deep\":{\"flag\":true,\"value\":42}}},\"z_last\":\"sorted last\"},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":100,\"resources_used\":{\"cpu\":{\"cores\":4,\"utilization\":0.75},\"memory\":{\"avg_mb\":128,\"peak_mb\":256}},\"tool_calls\":[]},\"id\":\"e1f2a3b4-c5d6-7890-efab-901234567890\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Nested config processed\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Run nested config job\",\"source\":\"scheduler\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "caf01df1b30bbde7d25f52ae5b22dc68ef3e31880ec1b5615482d6d39016141e"
     },
     {
       "name": "chain_genesis",
@@ -845,6 +856,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "cli",
@@ -889,8 +901,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"f2a3b4c5-d6e7-8901-fabc-012345678901\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Genesis capsule\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"First action in chain\",\"source\":\"cli\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "67c707931e5b4554f8203925ba32a245816867d53486a7b67f39f8b962775105"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"f2a3b4c5-d6e7-8901-fabc-012345678901\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Genesis capsule\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"First action in chain\",\"source\":\"cli\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "1bcbd6691266a2ee434f5f23608b407b07ee8d3ba77a9d874778d2e5cc50770e"
     },
     {
       "name": "chain_linked",
@@ -902,6 +914,7 @@
         "parent_id": null,
         "sequence": 1,
         "previous_hash": "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+        "spec_version": "1.0",
         "trigger": {
           "type": "user_request",
           "source": "cli",
@@ -946,8 +959,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"a3b4c5d6-e7f8-9012-abcd-123456789abc\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Linked capsule\"},\"parent_id\":null,\"previous_hash\":\"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9\",\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":1,\"trigger\":{\"correlation_id\":null,\"request\":\"Second action in chain\",\"source\":\"cli\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
-      "sha3_256_hash": "8f4972c8ab1e709146ab012316db7e47b1fb4b5718411127f2ea14509bf747a9"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"a3b4c5d6-e7f8-9012-abcd-123456789abc\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Linked capsule\"},\"parent_id\":null,\"previous_hash\":\"b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9\",\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":1,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Second action in chain\",\"source\":\"cli\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "c68c082eeccd3064703d620db16ea8e830bb9f7845556048f0fa14634a34383a"
     },
     {
       "name": "failure_with_error",
@@ -959,6 +972,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "agent",
           "source": "executor_001",
@@ -1014,8 +1028,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":\"DENY-ALL-DESTRUCTIVE\",\"type\":\"policy\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[{\"arguments\":{\"database\":\"production\"},\"duration_ms\":0,\"error\":\"Blocked by policy DENY-ALL-DESTRUCTIVE\",\"result\":null,\"success\":false,\"tool\":\"db_drop\"}]},\"id\":\"b4c5d6e7-f8a9-0123-bcde-23456789abcd\",\"outcome\":{\"error\":\"Action blocked by safety policy\",\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"failure\",\"summary\":\"Destructive action denied by policy\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Delete production database\",\"source\":\"executor_001\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"agent\",\"user_id\":null},\"type\":\"tool\"}",
-      "sha3_256_hash": "7503baff37a36699f25cbbd897e421cb53e17e6fa57be95e0c96794b8abe1840"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":\"DENY-ALL-DESTRUCTIVE\",\"type\":\"policy\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[{\"arguments\":{\"database\":\"production\"},\"duration_ms\":0,\"error\":\"Blocked by policy DENY-ALL-DESTRUCTIVE\",\"result\":null,\"success\":false,\"tool\":\"db_drop\"}]},\"id\":\"b4c5d6e7-f8a9-0123-bcde-23456789abcd\",\"outcome\":{\"error\":\"Action blocked by safety policy\",\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"failure\",\"summary\":\"Destructive action denied by policy\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Delete production database\",\"source\":\"executor_001\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"agent\",\"user_id\":null},\"type\":\"tool\"}",
+      "sha3_256_hash": "b407b8ea64fedf843a7829cdf9dee7993276680d18520d6e1f76698efee96ce4"
     },
     {
       "name": "auth_escalated",
@@ -1027,6 +1041,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "system",
           "source": "auth_service",
@@ -1082,8 +1097,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":\"admin@example.com\",\"chain\":[{\"level\":1,\"method\":\"password\",\"result\":\"passed\"},{\"level\":2,\"method\":\"totp\",\"result\":\"passed\"}],\"escalation_reason\":\"Admin action requires MFA\",\"policy_reference\":null,\"type\":\"escalated\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"auth\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c5d6e7f8-a9b0-1234-cdef-3456789abcde\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"MFA verified, admin access granted\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"MFA challenge for admin action\",\"source\":\"auth_service\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":\"admin@example.com\"},\"type\":\"auth\"}",
-      "sha3_256_hash": "336e52623385149110d295881629e517f0ed16740410ac0ec308fced730d49fa"
+      "canonical_json": "{\"authority\":{\"approver\":\"admin@example.com\",\"chain\":[{\"level\":1,\"method\":\"password\",\"result\":\"passed\"},{\"level\":2,\"method\":\"totp\",\"result\":\"passed\"}],\"escalation_reason\":\"Admin action requires MFA\",\"policy_reference\":null,\"type\":\"escalated\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"auth\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"c5d6e7f8-a9b0-1234-cdef-3456789abcde\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"MFA verified, admin access granted\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"MFA challenge for admin action\",\"source\":\"auth_service\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"system\",\"user_id\":\"admin@example.com\"},\"type\":\"auth\"}",
+      "sha3_256_hash": "cbe2799722f0586f229fcce8cbaafa376bd74b908d3d4b5936d8147db41f550a"
     },
     {
       "name": "vault_secret",
@@ -1095,6 +1110,7 @@
         "parent_id": null,
         "sequence": 0,
         "previous_hash": null,
+        "spec_version": "1.0",
         "trigger": {
           "type": "scheduled",
           "source": "secret_rotator",
@@ -1164,8 +1180,8 @@
           "metrics": {}
         }
       },
-      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":\"POLICY-SECRET-ROTATION-90D\",\"type\":\"policy\"},\"context\":{\"agent_id\":\"vault-agent\",\"environment\":{\"region\":\"us-east-1\",\"vault_backend\":\"hashicorp\"},\"session_id\":null},\"domain\":\"secrets\",\"execution\":{\"duration_ms\":320,\"resources_used\":{\"api_calls\":2},\"tool_calls\":[{\"arguments\":{\"secret\":\"db/prod/credentials\",\"ttl\":\"90d\"},\"duration_ms\":320,\"error\":null,\"result\":{\"rotated\":true,\"version\":7},\"success\":true,\"tool\":\"vault_rotate\"}]},\"id\":\"d6e7f8a9-b0c1-2345-defa-456789abcdef\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":{\"new_version\":7,\"secret_path\":\"db/prod/credentials\"},\"side_effects\":[\"Old credentials revoked after 5m grace period\"],\"status\":\"success\",\"summary\":\"Rotated database credentials, version 7\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Rotate database credentials for production\",\"source\":\"secret_rotator\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"scheduled\",\"user_id\":null},\"type\":\"vault\"}",
-      "sha3_256_hash": "af88f095652eefeb8b6aeaca64860ac4ffc0476f3f274157387dd633ab6c9396"
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":\"POLICY-SECRET-ROTATION-90D\",\"type\":\"policy\"},\"context\":{\"agent_id\":\"vault-agent\",\"environment\":{\"region\":\"us-east-1\",\"vault_backend\":\"hashicorp\"},\"session_id\":null},\"domain\":\"secrets\",\"execution\":{\"duration_ms\":320,\"resources_used\":{\"api_calls\":2},\"tool_calls\":[{\"arguments\":{\"secret\":\"db/prod/credentials\",\"ttl\":\"90d\"},\"duration_ms\":320,\"error\":null,\"result\":{\"rotated\":true,\"version\":7},\"success\":true,\"tool\":\"vault_rotate\"}]},\"id\":\"d6e7f8a9-b0c1-2345-defa-456789abcdef\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":{\"new_version\":7,\"secret_path\":\"db/prod/credentials\"},\"side_effects\":[\"Old credentials revoked after 5m grace period\"],\"status\":\"success\",\"summary\":\"Rotated database credentials, version 7\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.0,\"model\":null,\"options\":[],\"options_considered\":[],\"prompt_hash\":null,\"reasoning\":\"\",\"selected_option\":\"\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Rotate database credentials for production\",\"source\":\"secret_rotator\",\"timestamp\":\"2026-01-15T12:00:00+00:00\",\"type\":\"scheduled\",\"user_id\":null},\"type\":\"vault\"}",
+      "sha3_256_hash": "4093195c56dd7a7ad3ae3513842a0a6f60537474cdfe90b92964c572e8f93a48"
     }
   ]
 }
