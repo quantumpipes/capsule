@@ -11,8 +11,11 @@ Every AI action produces a Capsule — a tamper-evident, content-addressable rec
 [![Conformance](https://img.shields.io/badge/Conformance-16_vectors-ff69b4.svg)](./conformance/)
 [![FIPS](https://img.shields.io/badge/Crypto-FIPS_202%20·%20186--5%20·%20204-purple.svg)](#cryptographic-seal)
 [![Coverage](https://img.shields.io/badge/Coverage-100%25-brightgreen.svg)](./reference/python/)
+[![AI Agents](https://img.shields.io/badge/AI%20Agents-AGENTS.md-blueviolet.svg)](./AGENTS.md)
 
 </div>
+
+> **AI coding agents:** start with [AGENTS.md](./AGENTS.md). It contains build and test commands, project structure, code style, crypto allowlist, and the guardrails that keep the protocol intact.
 
 ---
 
@@ -185,6 +188,20 @@ The specification is language-agnostic. Any implementation that passes the confo
 Six sections. Hashed with SHA3-256. Signed with Ed25519. Chained to the previous record. Reasoning captured *before* execution.
 
 See more examples in [`examples/`](./examples/).
+
+---
+
+## Explore the fit with your AI coding agent
+
+Paste this prompt into Claude Code, Cursor, Codex, or any other agent:
+
+```text
+Read the Capsule Protocol README and AGENTS.md at https://github.com/quantumpipes/capsule.
+Then survey my codebase for every place an AI agent takes autonomous action (tool calls,
+LLM completions, scheduled jobs, deploy triggers) and currently lacks a tamper-evident
+audit trail. For each, explain what a capsule would record. Recommend the single
+highest-leverage place to start, with concrete files and functions to change.
+```
 
 ---
 
