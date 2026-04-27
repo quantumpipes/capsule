@@ -277,6 +277,12 @@ class ExecutionSection:
     duration_ms: int = 0
     resources_used: dict[str, Any] = field(default_factory=dict)
 
+    # CIS source attribution: tracks which Vault documents and chunks
+    # contributed to a RAG-informed response, with trust metadata.
+    # Each entry: {chunk_id, resource_id, resource_name, trust_tier,
+    #              adversarial_status, provenance_hash}
+    source_attribution: list[dict[str, Any]] = field(default_factory=list)
+
 
 # =============================================================================
 # SECTION 6: OUTCOME
