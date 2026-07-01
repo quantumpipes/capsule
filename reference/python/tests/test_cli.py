@@ -787,3 +787,68 @@ class TestKeyringVerification:
         r = verify_chain([c0, c1], level="signatures", seal=seal_obj2)
         assert r.valid is True
         assert r.capsules_verified == 2
+
+
+class TestVerifyWithExplicitPublicKey:
+    """Offline third-party verification with only the signer's public key.
+
+    This is the wedge: anyone holding the signer's Ed25519 public key can verify
+    a chain with no keyring, no database, and no access to the signing key. The
+    verifier here is a separate Seal with its OWN unrelated key, proving that
+    verification succeeds purely from the supplied public key.
+    """
+
+    def test_verify_offline_with_only_public_key(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 3)
+        signer_pub = seal.get_public_key()
+        verifier = Seal(key_path=temp_dir / "verifier_key")  # different, unrelated key
+        r = verify_chain(chain, level="signatures", seal=verifier, public_key=signer_pub)
+        assert r.valid is True
+        assert r.capsules_verified == 3
+
+    def test_wrong_public_key_fails(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 2)
+        other = Seal(key_path=temp_dir / "other_key")
+        wrong_pub = other.get_public_key()
+        r = verify_chain(chain, level="signatures", seal=other, public_key=wrong_pub)
+        assert r.valid is False
+
+    def test_tampered_content_fails_pubkey_verify(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 2)
+        signer_pub = seal.get_public_key()
+        chain[1].trigger.request = "tampered-after-sealing"  # mutate content post-seal
+        verifier = Seal(key_path=temp_dir / "v_key")
+        r = verify_chain(chain, level="signatures", seal=verifier, public_key=signer_pub)
+        assert r.valid is False
+
+    def test_cli_verify_with_pubkey_flag(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 2)
+        signer_pub = seal.get_public_key()
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(["verify", str(path), "--pubkey", signer_pub, "--quiet"])
+        assert cmd_verify(args) == 0
+
+    def test_cli_verify_with_pubkey_file(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 2)
+        pub_path = temp_dir / "signer.pub"
+        pub_path.write_text(seal.get_public_key() + "\n", encoding="utf-8")
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey-file", str(pub_path), "--quiet"]
+        )
+        assert cmd_verify(args) == 0
+
+    def test_cli_verify_with_wrong_pubkey_exit_code(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 2)
+        wrong_pub = Seal(key_path=temp_dir / "other").get_public_key()
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(["verify", str(path), "--pubkey", wrong_pub, "--quiet"])
+        assert cmd_verify(args) == 1
+
+    def test_cli_pubkey_and_pubkey_file_conflict(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 1)
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey", "ab", "--pubkey-file", str(path)]
+        )
+        assert cmd_verify(args) == 2

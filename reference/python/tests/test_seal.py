@@ -295,6 +295,64 @@ class TestVerifyDetailed:
                 r = seal.verify_detailed(sample_capsule, verify_pq=True)
                 assert r.code == SealVerifyCode.PQ_VERIFICATION_FAILED
 
+    def test_require_pq_fails_closed_without_oqs(self, seal, sample_capsule):
+        """require_pq=True fails closed when the oqs library is unavailable.
+
+        SIGNAL: If this passes structurally, a caller demanding genuine
+        post-quantum proof could be silently downgraded to Ed25519-only.
+        """
+        seal.seal(sample_capsule)
+        sample_capsule.signature_pq = "ab" * 128
+        with patch("qp_capsule.seal._oqs_module", None):
+            r = seal.verify_detailed(sample_capsule, require_pq=True)
+        assert not r.ok
+        assert r.code == SealVerifyCode.PQ_LIBRARY_UNAVAILABLE
+
+    def test_require_pq_fails_closed_when_signature_pq_missing(
+        self, seal, sample_capsule
+    ):
+        """require_pq=True rejects an Ed25519-only (no signature_pq) capsule.
+
+        SIGNAL: A capsule that was never PQ-sealed must NOT pass a fail-closed
+        post-quantum verification, even though its Ed25519 seal is valid.
+        """
+        seal.seal(sample_capsule)
+        assert sample_capsule.signature_pq == ""
+        mock_oqs = MagicMock()
+        with patch("qp_capsule.seal._oqs_module", mock_oqs):
+            r = seal.verify_detailed(sample_capsule, require_pq=True)
+        assert not r.ok
+        assert r.code == SealVerifyCode.MISSING_PQ_SIGNATURE
+
+    def test_require_pq_invalid_signature_fails(self, seal, sample_capsule):
+        """require_pq=True with a present-but-invalid signature_pq fails."""
+        seal.seal(sample_capsule)
+        sample_capsule.signature_pq = "ab" * 128
+        mock_oqs = MagicMock()
+        with patch("qp_capsule.seal._oqs_module", mock_oqs):
+            with patch.object(seal, "_verify_dilithium", return_value=False):
+                r = seal.verify_detailed(sample_capsule, require_pq=True)
+        assert not r.ok
+        assert r.code == SealVerifyCode.PQ_VERIFICATION_FAILED
+
+    def test_verify_pq_malformed_signature_pq_hex_fails(self, seal, sample_capsule):
+        """A non-hex signature_pq is rejected, not silently treated as valid."""
+        seal.seal(sample_capsule)
+        sample_capsule.signature_pq = "not-valid-hex-zz"
+        mock_oqs = MagicMock()
+        with patch("qp_capsule.seal._oqs_module", mock_oqs):
+            r = seal.verify_detailed(sample_capsule, verify_pq=True)
+        assert not r.ok
+        assert r.code == SealVerifyCode.PQ_VERIFICATION_FAILED
+
+    def test_verify_method_accepts_require_pq_kwarg(self, seal, sample_capsule):
+        """verify() exposes require_pq and routes it through to verify_detailed."""
+        seal.seal(sample_capsule)
+        # No signature_pq present -> fail-closed must return False.
+        mock_oqs = MagicMock()
+        with patch("qp_capsule.seal._oqs_module", mock_oqs):
+            assert seal.verify(sample_capsule, require_pq=True) is False
+
     def test_verify_detailed_ed25519_non_signature_exception(self, seal, sample_capsule):
         seal.seal(sample_capsule)
         with patch("qp_capsule.seal.VerifyKey.verify", side_effect=RuntimeError("boom")):

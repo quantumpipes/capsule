@@ -11,7 +11,8 @@ Usage::
 
     capsule verify chain.json                     # Structural check
     capsule verify --full chain.json              # + content hashes
-    capsule verify --signatures --db capsules.db  # + Ed25519 sigs
+    capsule verify --signatures --db capsules.db  # + Ed25519 sigs (keyring)
+    capsule verify --pubkey <hex> chain.json      # + Ed25519 sigs, offline, only the public key
     capsule inspect --db capsules.db --seq 2      # Show capsule #2
     capsule keys info                             # Key metadata
     capsule keys rotate                           # Rotate to new epoch
@@ -198,6 +199,7 @@ def verify_chain(
     *,
     level: str = "structural",
     seal: Seal | None = None,
+    public_key: str | None = None,
 ) -> VerifyResult:
     """
     Verify a chain of capsules.
@@ -206,6 +208,12 @@ def verify_chain(
         structural: sequence + previous_hash linkage
         full:       structural + recompute SHA3-256
         signatures: full + Ed25519 verification
+
+    When ``public_key`` (a hex-encoded Ed25519 public key) is supplied at the
+    ``signatures`` level, each capsule's signature is verified against that
+    explicit key via :meth:`Seal.verify_with_key_detailed`. This is the offline
+    third-party path: anyone holding the signer's public key can verify the chain
+    with no keyring, no database, and no access to the signing key.
     """
     total = len(capsules)
     errors: list[VerifyError] = []
@@ -242,7 +250,14 @@ def verify_chain(
                 break
 
         if do_sigs and seal is not None:
-            if not seal.verify(capsule):
+            if public_key is not None:
+                res = seal.verify_with_key_detailed(capsule, public_key)
+                if not res.ok:
+                    detail = res.message or str(res.code)
+                    msg = f"Signature verification failed at sequence {i}: {detail}"
+                    errors.append(VerifyError(i, str(capsule.id), msg))
+                    break
+            elif not seal.verify(capsule):
                 msg = f"Signature verification failed at sequence {i}"
                 errors.append(VerifyError(i, str(capsule.id), msg))
                 break
@@ -392,12 +407,35 @@ def cmd_verify(args: argparse.Namespace) -> int:
         print(f"Error loading capsules: {e}", file=sys.stderr)
         return 2
 
+    public_key = None
+    pubkey_arg = getattr(args, "pubkey", None)
+    pubkey_file = getattr(args, "pubkey_file", None)
+    if pubkey_arg and pubkey_file:
+        print("Error: specify only one of --pubkey / --pubkey-file", file=sys.stderr)
+        return 2
+    if pubkey_file:
+        try:
+            public_key = Path(pubkey_file).read_text("utf-8").strip()
+        except Exception as e:
+            print(f"Error reading --pubkey-file: {e}", file=sys.stderr)
+            return 2
+    elif pubkey_arg:
+        public_key = pubkey_arg.strip()
+
+    level = args.level
     seal = None
-    if args.level == "signatures":
+    if public_key is not None:
+        # An explicit public key implies signature verification and needs no
+        # keyring or database: this is the offline third-party path. The
+        # verify_with_key_detailed call uses only the supplied key, so this Seal
+        # instance never touches a local signing key.
+        level = "signatures"
+        seal = Seal()
+    elif level == "signatures":
         keyring = Keyring()
         seal = Seal(keyring=keyring)
 
-    result = verify_chain(capsules, level=args.level, seal=seal)
+    result = verify_chain(capsules, level=level, seal=seal, public_key=public_key)
 
     if getattr(args, "json_output", False):
         print(json.dumps(result.to_dict(), indent=2))
@@ -591,6 +629,16 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Full + verify Ed25519 signatures via keyring",
     )
     vp.set_defaults(level="structural")
+    vp.add_argument(
+        "--pubkey", metavar="HEX", default=None,
+        help="Verify Ed25519 signatures offline against this explicit public key "
+        "(hex). Needs no keyring or database; implies --signatures. The "
+        "third-party path: anyone with the signer's public key can verify the chain.",
+    )
+    vp.add_argument(
+        "--pubkey-file", metavar="PATH", default=None, dest="pubkey_file",
+        help="Read the explicit Ed25519 public key (hex) from a file. Implies --signatures.",
+    )
     vp.add_argument(
         "--json", action="store_true", dest="json_output",
         help="Machine-readable JSON output",

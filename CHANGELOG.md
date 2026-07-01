@@ -9,6 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **CLI offline third-party verification** (`capsule verify --pubkey <hex>` and `--pubkey-file <path>`): verify a chain's Ed25519 signatures against an explicit signer public key with no keyring, no database, and no access to the signing key. Implies `--signatures`; built on the existing `Seal.verify_with_key_detailed`. `verify_chain()` gains an optional `public_key` parameter (boolean/keyring paths unchanged). Adds 7 CLI tests covering correct key, wrong key, tampered content, both flags, exit codes, and flag conflict.
+
 ---
 
 ## [1.5.3] - 2026-03-23

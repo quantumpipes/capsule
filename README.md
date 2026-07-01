@@ -330,6 +330,7 @@ The Python package includes a CLI for verification, inspection, and key manageme
 capsule verify chain.json                      # Structural verification
 capsule verify --full --db capsules.db         # + SHA3-256 recomputation
 capsule verify --signatures --json chain.json  # + Ed25519, JSON output
+capsule verify --pubkey <hex> chain.json       # + Ed25519 offline (no keyring/db)
 capsule inspect --db capsules.db --seq 47      # Full 6-section display
 capsule keys info                              # Epoch history
 capsule keys rotate                            # Rotate to new key (no downtime)

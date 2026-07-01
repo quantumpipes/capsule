@@ -75,6 +75,7 @@ class SealVerifyCode(StrEnum):
     INVALID_SIGNATURE = "invalid_signature"
     PQ_VERIFICATION_FAILED = "pq_verification_failed"
     PQ_LIBRARY_UNAVAILABLE = "pq_library_unavailable"
+    MISSING_PQ_SIGNATURE = "missing_pq_signature"
     UNSUPPORTED_ALGORITHM = "unsupported_algorithm"
 
 
@@ -411,13 +412,34 @@ class Seal:
         except Exception:
             return None
 
-    def verify_detailed(self, capsule: Capsule, verify_pq: bool = False) -> SealVerificationResult:
+    def verify_detailed(
+        self,
+        capsule: Capsule,
+        verify_pq: bool = False,
+        *,
+        require_pq: bool = False,
+    ) -> SealVerificationResult:
         """
         Verify a sealed Capsule and return a structured result (FR-003).
 
         Same cryptographic steps as :meth:`verify`, but returns :class:`SealVerificationResult`
         with a :class:`SealVerifyCode` instead of only ``True``/``False``.
+
+        Args:
+            capsule: The Capsule to verify.
+            verify_pq: If True, recompute and verify the ML-DSA-65 ``signature_pq``
+                when one is present. A present-but-invalid PQ signature always fails.
+            require_pq: Fail-closed post-quantum mode. When True, the capsule MUST
+                carry a non-empty ``signature_pq``, the oqs library MUST be available,
+                and the ML-DSA-65 signature MUST verify. Implies ``verify_pq``. Use
+                this when a caller demands genuine quantum-resistant proof and must
+                never accept a structural-only or Ed25519-only result.
+
+        Returns:
+            SealVerificationResult with a machine-readable SealVerifyCode.
         """
+        if require_pq:
+            verify_pq = True
         if not capsule.hash:
             return SealVerificationResult(
                 False, SealVerifyCode.MISSING_HASH, "capsule has no hash field"
@@ -480,7 +502,30 @@ class Seal:
                 f"Ed25519 verification error: {e!s}",
             )
 
+        # Fail-closed post-quantum mode: the caller demands a genuine ML-DSA-65
+        # proof. Reject anything that cannot deliver one BEFORE accepting.
+        if require_pq:
+            if _oqs_module is None:
+                return SealVerificationResult(
+                    False,
+                    SealVerifyCode.PQ_LIBRARY_UNAVAILABLE,
+                    "post-quantum verification required but oqs is not installed",
+                )
+            if not capsule.signature_pq:
+                return SealVerificationResult(
+                    False,
+                    SealVerifyCode.MISSING_PQ_SIGNATURE,
+                    "post-quantum verification required but capsule has no signature_pq",
+                )
+
         if verify_pq and capsule.signature_pq:
+            _, pq_err = _try_hex_bytes(capsule.signature_pq, None)
+            if pq_err is not None:
+                return SealVerificationResult(
+                    False,
+                    SealVerifyCode.PQ_VERIFICATION_FAILED,
+                    "signature_pq is not valid hexadecimal",
+                )
             if not self._verify_dilithium(capsule.hash, capsule.signature_pq):
                 if _oqs_module is None:
                     return SealVerificationResult(
@@ -496,7 +541,13 @@ class Seal:
 
         return SealVerificationResult(True, SealVerifyCode.OK, "")
 
-    def verify(self, capsule: Capsule, verify_pq: bool = False) -> bool:
+    def verify(
+        self,
+        capsule: Capsule,
+        verify_pq: bool = False,
+        *,
+        require_pq: bool = False,
+    ) -> bool:
         """
         Verify a sealed Capsule.
 
@@ -513,12 +564,20 @@ class Seal:
 
         Args:
             capsule: The Capsule to verify
-            verify_pq: If True, also verify post-quantum signature (if present)
+            verify_pq: If True, also recompute and verify the post-quantum
+                ML-DSA-65 signature when one is present (a present-but-invalid
+                PQ signature fails verification).
+            require_pq: Fail-closed PQ mode. When True, verification fails unless
+                the capsule carries a valid ML-DSA-65 ``signature_pq`` and oqs is
+                available. Implies ``verify_pq``. Callers that must never accept a
+                structural-only or classical-only result pass ``require_pq=True``.
 
         Returns:
             True if seal is valid, False otherwise
         """
-        return self.verify_detailed(capsule, verify_pq=verify_pq).ok
+        return self.verify_detailed(
+            capsule, verify_pq=verify_pq, require_pq=require_pq
+        ).ok
 
     def _verify_dilithium(self, hash_value: str, signature_hex: str) -> bool:
         """

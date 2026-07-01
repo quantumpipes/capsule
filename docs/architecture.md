@@ -430,6 +430,7 @@ pip install qp-capsule
 capsule verify chain.json                     # Structural (sequence + previous_hash)
 capsule verify --full chain.json              # + recompute SHA3-256 from content
 capsule verify --signatures --db capsules.db  # + Ed25519 via keyring
+capsule verify --pubkey <hex> chain.json      # + Ed25519 offline, only the signer public key
 capsule verify --json chain.json              # Machine-readable for policy engines
 capsule verify --quiet chain.json && deploy   # CI/CD gate (exit code only)
 ```

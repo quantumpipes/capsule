@@ -22,6 +22,7 @@ from unittest.mock import patch
 import pytest
 
 from qp_capsule import Capsule, Seal, SealError, TriggerSection
+from qp_capsule.seal import SealVerifyCode
 
 _pq_installed = False
 try:
@@ -201,6 +202,70 @@ class TestTier2DualSignature:
             seal.seal(capsule)
 
             assert capsule.has_pq_seal(), "Should have PQ seal with both signatures"
+
+
+@requires_pq
+class TestPQSignatureVerification:
+    """
+    Genuine ML-DSA-65 verification: a tampered signature_pq must be rejected,
+    and fail-closed (require_pq) mode must demand a real PQ proof.
+    """
+
+    def test_valid_pq_signature_verifies(self):
+        """A real dual-sealed capsule passes both verify_pq and require_pq."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            seal = Seal(key_path=Path(tmpdir) / "key", enable_pq=True)
+            capsule = Capsule(
+                trigger=TriggerSection(type="test", source="test", request="PQ proof")
+            )
+            seal.seal(capsule)
+
+            assert capsule.signature_pq != ""
+            assert seal.verify(capsule, verify_pq=True) is True
+            assert seal.verify(capsule, require_pq=True) is True
+
+    def test_flipped_pq_signature_fails_verification(self):
+        """
+        Flipping a byte of signature_pq must break ML-DSA-65 verification.
+
+        SIGNAL: This is the cryptographic regression guard. If a tampered
+        post-quantum signature still verifies, the PQ tier is decorative.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            seal = Seal(key_path=Path(tmpdir) / "key", enable_pq=True)
+            capsule = Capsule(
+                trigger=TriggerSection(type="test", source="test", request="Tamper PQ")
+            )
+            seal.seal(capsule)
+
+            original = capsule.signature_pq
+            assert original != ""
+
+            # Ed25519 + hash are untouched, so structural verify still passes.
+            assert seal.verify(capsule, verify_pq=False) is True
+
+            # Flip the first hex nibble of the PQ signature.
+            flipped_first = "f" if original[0] != "f" else "0"
+            tampered = flipped_first + original[1:]
+            assert tampered != original
+            capsule.signature_pq = tampered
+
+            # Genuine ML-DSA-65 verification must now fail.
+            result = seal.verify_detailed(capsule, verify_pq=True)
+            assert result.ok is False
+            assert result.code == SealVerifyCode.PQ_VERIFICATION_FAILED
+            assert seal.verify(capsule, verify_pq=True) is False
+            assert seal.verify(capsule, require_pq=True) is False
+
+    def test_require_pq_passes_for_real_dual_seal(self):
+        """require_pq=True returns True only for a genuine ML-DSA-65 seal."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            seal = Seal(key_path=Path(tmpdir) / "key", enable_pq=True)
+            capsule = Capsule()
+            seal.seal(capsule)
+            r = seal.verify_detailed(capsule, require_pq=True)
+            assert r.ok is True
+            assert r.code == SealVerifyCode.OK
 
 
 class TestPQRequirementEnforced:
