@@ -105,24 +105,58 @@ class CapsuleStorage:
         return self._session_factory
 
     async def _ensure_db(self) -> None:
-        """Initialize database if needed."""
-        if self._engine is None:
-            self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        """Initialize the database if needed. Atomic: all-or-nothing.
 
-            self._engine = create_async_engine(
-                f"sqlite+aiosqlite:///{self.db_path}",
-                echo=False,
-                **self._engine_kwargs,
-            )
+        Readiness is keyed off ``_session_factory`` (what callers actually need),
+        and the engine plus the factory are published together, only after
+        ``create_all`` has succeeded.
 
-            async with self._engine.begin() as conn:
+        The previous version assigned ``self._engine`` BEFORE creating the schema
+        and gated on ``if self._engine is None``. So any failure inside
+        ``create_all`` (a locked db file, a full disk, an engine whose pool is
+        bound to an event loop that has since closed) left the instance with an
+        engine but no session factory. Every later call then short-circuited,
+        returned without doing anything, and ``_get_session_factory()`` raised
+        "Database not initialized — call _ensure_db() first" for the entire life
+        of the process, even though ``_ensure_db()`` was being called every time.
+        One transient error permanently disabled capsule persistence, and the
+        audit trail went silently dead. It is now self-healing: on failure both
+        attributes stay unset and the next call retries from scratch.
+
+        Raises:
+            Exception: Whatever the underlying engine/schema creation raised. The
+                partially built engine is disposed first, so nothing is retained.
+        """
+        if self._session_factory is not None:
+            return
+
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+
+        engine = create_async_engine(
+            f"sqlite+aiosqlite:///{self.db_path}",
+            echo=False,
+            **self._engine_kwargs,
+        )
+
+        try:
+            async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
+        except Exception:
+            await engine.dispose()
+            raise
 
-            self._session_factory = async_sessionmaker(
-                self._engine,
-                class_=AsyncSession,
-                expire_on_commit=False,
-            )
+        # A concurrent caller may have finished initializing while this one was
+        # building. Keep theirs and drop ours rather than leaking an engine.
+        if self._session_factory is not None:
+            await engine.dispose()
+            return
+
+        self._engine = engine
+        self._session_factory = async_sessionmaker(
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+        )
 
     async def store(self, capsule: Capsule, tenant_id: str | None = None) -> Capsule:
         """
