@@ -46,7 +46,8 @@ nist-submission/       NIST materials
 - **No em dashes** anywhere in code, commits, or docs. Use commas, periods, colons, parentheses.
 - Python: type hints on all public functions, async where I/O happens, mypy strict, filterwarnings = ["error"] (any new warning fails CI).
 - TypeScript: strict mode, ESM-only (`.js` extensions in imports).
-- **Crypto allowlist:** SHA3-256 (FIPS 202), Ed25519 (FIPS 186-5), ML-DSA-65 (FIPS 204), AES-256-GCM (FIPS 197). **Never** MD5, SHA1, SHA2, RSA, ECDSA-P256, 3DES, RC4.
+- **Crypto allowlist:** SHA3-256 (FIPS 202), Ed25519 (FIPS 186-5), ML-DSA-65 (FIPS 204), AES-256-GCM (FIPS 197). **Never** MD5, SHA1, RSA, 3DES, RC4. ECDSA-P256 only for an ephemeral authentication assertion where interop requires it, never for a capsule signature.
+  <!-- SHA2 removed from the ban 2026-07-28: Ed25519 (RFC 8032) uses SHA-512 internally, and `pynacl` on line 8 implements it that way, so the ban prohibited this package's own signing dependency. See root CLAUDE.md for the tiered rule. -->
 
 Canonical seal (Python):
 ```python
