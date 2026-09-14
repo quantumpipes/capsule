@@ -11,7 +11,7 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 import * as ed25519 from "@noble/ed25519";
 import { canonicalize } from "./canonical.js";
 import type { Capsule, CapsuleDict } from "./capsule.js";
-import { toDict } from "./capsule.js";
+import { contentForHash, toDict, withStoredDocument } from "./capsule.js";
 
 // ---------------------------------------------------------------------------
 // Hash
@@ -64,6 +64,8 @@ export async function seal(
   capsule.signature_pq = "";
   capsule.signed_at = new Date().toISOString().replace("Z", "+00:00");
   capsule.signed_by = bytesToHex(publicKey).slice(0, 16);
+  // The new seal covers the current content, not a document read earlier.
+  withStoredDocument(capsule, null);
 
   return capsule;
 }
@@ -136,8 +138,16 @@ export async function verifyDetailed(
 
   let computedHash: string;
   try {
-    const dict = toDict(capsule);
-    computedHash = computeHash(dict);
+    // Hash the stored document (CPS Section 3.5), never a re-serialized model.
+    const content = contentForHash(capsule);
+    if (content === null) {
+      return {
+        ok: false,
+        code: "hash_mismatch",
+        message: "capsule content was changed after it was read from storage",
+      };
+    }
+    computedHash = computeHashFromDict(content);
   } catch (e) {
     return {
       ok: false,
@@ -222,6 +232,8 @@ function tryParseHex(hex: string, byteLength: number): Uint8Array | null {
   const out = new Uint8Array(byteLength);
   for (let i = 0; i < hex.length; i += 2) {
     const v = parseInt(hex.slice(i, i + 2), 16);
+    // Unreachable after the hex check above; kept as a defensive guard.
+    /* v8 ignore next -- @preserve */
     if (Number.isNaN(v)) return null;
     out[i / 2] = v;
   }

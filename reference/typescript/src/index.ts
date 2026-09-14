@@ -30,6 +30,10 @@ export {
   createOutcome,
   toDict,
   isSealed,
+  ADDED_CONTENT_DEFAULTS,
+  contentForHash,
+  storedDocument,
+  withStoredDocument,
 } from "./capsule.js";
 
 export { canonicalize } from "./canonical.js";

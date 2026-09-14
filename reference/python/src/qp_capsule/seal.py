@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING, Any
 from nacl.exceptions import BadSignatureError
 from nacl.signing import SigningKey, VerifyKey
 
+from qp_capsule.capsule import attach_stored_document, content_for_hash
 from qp_capsule.exceptions import SealError
 from qp_capsule.paths import default_key_path
 
@@ -370,6 +371,8 @@ class Seal:
             capsule.signature_pq = signature_pq
             capsule.signed_at = datetime.now(UTC)
             capsule.signed_by = self.get_key_fingerprint()
+            # The new seal covers the current model, not a document read earlier.
+            attach_stored_document(capsule, None)
 
             return capsule
 
@@ -456,17 +459,9 @@ class Seal:
         if serr is not None:
             return serr
 
-        try:
-            content = json.dumps(
-                capsule.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-            )
-            computed_hash = hashlib.sha3_256(content.encode("utf-8")).hexdigest()
-        except Exception as e:
-            return SealVerificationResult(
-                False,
-                SealVerifyCode.HASH_MISMATCH,
-                f"could not compute content hash: {e!s}",
-            )
+        computed_hash, hash_error = _recompute_content_hash(capsule)
+        if hash_error is not None:
+            return hash_error
 
         if computed_hash != capsule.hash:
             return SealVerificationResult(
@@ -625,17 +620,9 @@ class Seal:
         if serr is not None:
             return serr
 
-        try:
-            content = json.dumps(
-                capsule.to_dict(), sort_keys=True, separators=(",", ":"), ensure_ascii=False
-            )
-            computed_hash = hashlib.sha3_256(content.encode("utf-8")).hexdigest()
-        except Exception as e:
-            return SealVerificationResult(
-                False,
-                SealVerifyCode.HASH_MISMATCH,
-                f"could not compute content hash: {e!s}",
-            )
+        computed_hash, hash_error = _recompute_content_hash(capsule)
+        if hash_error is not None:
+            return hash_error
 
         if computed_hash != capsule.hash:
             return SealVerificationResult(
@@ -699,3 +686,30 @@ def compute_hash(data: dict[str, Any]) -> str:
     """
     content = json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     return hashlib.sha3_256(content.encode("utf-8")).hexdigest()
+
+
+def _recompute_content_hash(capsule: Capsule) -> tuple[str, SealVerificationResult | None]:
+    """
+    Recompute the SHA3-256 hash of the document a seal covers (CPS Section 3.5).
+
+    Returns:
+        ``(hash, None)`` on success, or ``("", result)`` with a ``HASH_MISMATCH``
+        result when the Capsule changed after it was read or cannot be serialized.
+    """
+    try:
+        document = content_for_hash(capsule)
+        if document is None:
+            return "", SealVerificationResult(
+                False,
+                SealVerifyCode.HASH_MISMATCH,
+                "capsule content was changed after it was loaded from storage",
+            )
+        content = json.dumps(document, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        return hashlib.sha3_256(content.encode("utf-8")).hexdigest(), None
+    except Exception as e:
+        return "", SealVerificationResult(
+            False,
+            SealVerifyCode.HASH_MISMATCH,
+            f"could not compute content hash: {e!s}",
+        )
+

@@ -4,7 +4,7 @@ Capsule Protocol Specification (CPS) plus reference implementations. Open source
 
 ## Stack
 
-- **Spec:** `spec/` plus `conformance/` (16 valid + 15 negative golden vectors). Language-agnostic.
+- **Spec:** `spec/` plus `conformance/` (16 valid + 15 negative golden vectors, plus 1 stored-document vector). Language-agnostic.
 - **Python reference:** `reference/python/` publishes `qp-capsule` on PyPI. Python 3.11+, pynacl, hatchling.
 - **TypeScript reference:** `reference/typescript/` publishes `@quantumpipes/capsule` on npm. TypeScript 5.9+ strict, Node 20.19+, ESM-only.
 - **Ecosystem libraries** (not in this repo): capsule-go, capsule-litellm.

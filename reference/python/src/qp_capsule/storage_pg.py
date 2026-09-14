@@ -31,7 +31,7 @@ from sqlalchemy import DDL, Integer, String, Text, UniqueConstraint, desc, event
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from qp_capsule.capsule import Capsule, CapsuleType
+from qp_capsule.capsule import Capsule, CapsuleType, attach_stored_document
 from qp_capsule.exceptions import StorageError
 
 
@@ -330,7 +330,8 @@ class PostgresCapsuleStorage:
 
     def _to_capsule(self, model: CapsuleModelPG) -> Capsule:
         """Convert model to Capsule, restoring seal info from columns."""
-        capsule = Capsule.from_dict(json.loads(model.data))
+        data = json.loads(model.data)
+        capsule = attach_stored_document(Capsule.from_dict(data), data)
         capsule.hash = model.hash
         capsule.signature = model.signature
         capsule.signature_pq = model.signature_pq or ""

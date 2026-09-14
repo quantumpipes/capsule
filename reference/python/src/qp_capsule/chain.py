@@ -29,6 +29,7 @@ import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from qp_capsule.capsule import content_for_hash
 from qp_capsule.exceptions import ChainConflictError
 from qp_capsule.seal import compute_hash
 
@@ -166,8 +167,9 @@ class CapsuleChain:
                     )
 
             if verify_content:
-                computed = compute_hash(capsule.to_dict())
-                if computed != capsule.hash:
+                # Hash the stored document (CPS Section 3.5), never a re-serialized model.
+                document = content_for_hash(capsule)
+                if document is None or compute_hash(document) != capsule.hash:
                     return ChainVerificationResult(
                         valid=False,
                         error=f"Content hash mismatch at sequence {i}",

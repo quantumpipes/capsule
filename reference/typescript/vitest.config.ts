@@ -8,6 +8,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.ts"],
+      // index.ts only re-exports; exports.test.ts checks every public name.
+      exclude: ["src/index.ts"],
       thresholds: {
         statements: 100,
         branches: 100,

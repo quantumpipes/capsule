@@ -611,6 +611,9 @@ class Capsule:
             datetime.fromisoformat(signed_at) if signed_at else None
         )
         capsule.signed_by = data.get("signed_by", "")
+        attach_stored_document(
+            capsule, {k: v for k, v in data.items() if k not in _SEAL_FIELD_NAMES}
+        )
         return capsule
 
     @classmethod
@@ -661,3 +664,101 @@ class Capsule:
             f"Capsule({self.id}, type={self.type.value}, "
             f"status={self.outcome.status}, sealed={self.is_sealed()})"
         )
+
+
+# ---------------------------------------------------------------------------
+# The stored document (CPS Section 3.5)
+# ---------------------------------------------------------------------------
+
+#: Content fields added to CPS after capsules were already being sealed, with the
+#: value a reader fills in when a stored record predates the field. A record sealed
+#: before a field existed never hashed it, so verification does not demand it.
+ADDED_CONTENT_DEFAULTS: dict[str, Any] = {"spec_version": "1.0"}
+
+_STORED_DOCUMENT_ATTR = "_qp_stored_document"
+_SEAL_FIELD_NAMES = ("hash", "signature", "signature_pq", "signed_at", "signed_by")
+
+
+def attach_stored_document(capsule: Capsule, document: dict[str, Any] | None) -> Capsule:
+    """
+    Remember the exact content document a Capsule was read from.
+
+    Storage calls this for every Capsule it returns, so verification can hash the
+    document that was sealed instead of a re-serialization of today's model.
+    Passing ``None`` forgets the document.
+
+    Returns:
+        The same Capsule, for chaining.
+    """
+    if document is None:
+        capsule.__dict__.pop(_STORED_DOCUMENT_ATTR, None)
+    else:
+        capsule.__dict__[_STORED_DOCUMENT_ATTR] = document
+    return capsule
+
+
+def stored_document(capsule: Capsule) -> dict[str, Any] | None:
+    """Return the content document a Capsule was read from, or ``None`` for a fresh Capsule."""
+    document = capsule.__dict__.get(_STORED_DOCUMENT_ATTR)
+    return document if isinstance(document, dict) else None
+
+
+def _agrees(model: Any, stored: Any, *, top_level: bool) -> bool:
+    """True when every value in the model equals the stored value (CPS Section 3.5, rule 3)."""
+    if isinstance(model, dict):
+        if not isinstance(stored, dict):
+            return False
+        for key, value in model.items():
+            if key in stored:
+                if not _agrees(value, stored[key], top_level=False):
+                    return False
+            elif not (
+                top_level
+                and key in ADDED_CONTENT_DEFAULTS
+                and value == ADDED_CONTENT_DEFAULTS[key]
+            ):
+                return False
+        return True
+    if isinstance(model, list):
+        return (
+            isinstance(stored, list)
+            and len(model) == len(stored)
+            and all(_agrees(a, b, top_level=False) for a, b in zip(model, stored, strict=True))
+        )
+    return bool(model == stored)
+
+
+def content_for_hash(capsule: Capsule) -> dict[str, Any] | None:
+    """
+    Return the content document a seal covers.
+
+    A fresh Capsule hashes ``to_dict()``. A Capsule read from storage hashes the
+    stored document, which keeps records sealed before a content field existed
+    verifiable and keeps unknown stored keys inside the hash.
+
+    Returns:
+        The document to hash, or ``None`` when the Capsule was changed in memory
+        after it was read, which verification must report as a hash mismatch.
+    """
+    model = capsule.to_dict()
+    document = stored_document(capsule)
+    if document is None:
+        return model
+    if not _agrees(model, document, top_level=True):
+        return None
+    return document
+
+
+def to_stored_sealed_dict(capsule: Capsule) -> dict[str, Any]:
+    """
+    Serialize the sealed record as it was stored: the stored content document plus the seal.
+
+    Exports built from this verify the same way the stored records do. Falls back to
+    :meth:`Capsule.to_sealed_dict` for a fresh Capsule or one changed after it was read.
+    """
+    sealed = capsule.to_sealed_dict()
+    document = content_for_hash(capsule)
+    if document is None:
+        return sealed
+    return {**document, **{name: sealed[name] for name in _SEAL_FIELD_NAMES}}
+

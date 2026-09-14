@@ -34,7 +34,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from qp_capsule.capsule import Capsule, CapsuleType
+from qp_capsule.capsule import Capsule, CapsuleType, attach_stored_document
 from qp_capsule.exceptions import StorageError
 from qp_capsule.paths import default_db_path
 
@@ -384,7 +384,7 @@ class CapsuleStorage:
         from datetime import datetime
 
         data = json.loads(model.data)
-        capsule = Capsule.from_dict(data)
+        capsule = attach_stored_document(Capsule.from_dict(data), data)
 
         # Restore seal information
         capsule.hash = model.hash

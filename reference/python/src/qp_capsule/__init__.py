@@ -36,13 +36,14 @@ Cross-language SDKs: Python, TypeScript, Go, Rust
 Spec: https://github.com/quantumpipes/capsule
 """
 
-__version__ = "1.5.3"
+__version__ = "1.5.4"
 __author__ = "Quantum Pipes Technologies, LLC"
 __license__ = "Apache-2.0"
 
 import contextlib
 
 from qp_capsule.capsule import (
+    ADDED_CONTENT_DEFAULTS,
     AuthoritySection,
     Capsule,
     CapsuleType,
@@ -53,6 +54,10 @@ from qp_capsule.capsule import (
     ReasoningSection,
     ToolCall,
     TriggerSection,
+    attach_stored_document,
+    content_for_hash,
+    stored_document,
+    to_stored_sealed_dict,
 )
 from qp_capsule.exceptions import (
     CapsuleError,
@@ -84,6 +89,11 @@ __all__ = [
     # Capsule
     "Capsule",
     "CapsuleType",
+    "ADDED_CONTENT_DEFAULTS",
+    "attach_stored_document",
+    "content_for_hash",
+    "stored_document",
+    "to_stored_sealed_dict",
     "TriggerSection",
     "ContextSection",
     "ReasoningOption",

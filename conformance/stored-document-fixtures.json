@@ -1,0 +1,255 @@
+{
+  "version": "1.0",
+  "specification": "CPS v1.0 Section 3.5",
+  "generated_by": "conformance/generate_stored_document_fixtures.py",
+  "description": "A record sealed before spec_version joined the canonical content. A conformant verifier hashes the stored document, so the record verifies; hashing a model that fills in spec_version yields a different hash.",
+  "fixtures": [
+    {
+      "name": "sealed_before_spec_version",
+      "description": "Stored document without spec_version, its model re-serialization with spec_version \"1.0\", and an Ed25519 test signature over the stored hash.",
+      "stored_document": {
+        "id": "5d0c7a3e-2b1f-4c8e-9a6d-3f1e7b2c4d5a",
+        "type": "agent",
+        "domain": "agents",
+        "parent_id": null,
+        "sequence": 0,
+        "previous_hash": null,
+        "trigger": {
+          "type": "user_request",
+          "source": "conformance",
+          "timestamp": "2026-03-07T12:00:00+00:00",
+          "request": "Summarize the quarterly report",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [
+            {
+              "id": "opt_0",
+              "description": "summarize",
+              "pros": [],
+              "cons": [],
+              "estimated_impact": {},
+              "feasibility": 0.0,
+              "risks": [],
+              "selected": true,
+              "rejection_reason": ""
+            },
+            {
+              "id": "opt_1",
+              "description": "defer",
+              "pros": [],
+              "cons": [],
+              "estimated_impact": {},
+              "feasibility": 0.0,
+              "risks": [],
+              "selected": false,
+              "rejection_reason": ""
+            }
+          ],
+          "options_considered": [
+            "summarize",
+            "defer"
+          ],
+          "selected_option": "summarize",
+          "reasoning": "The report is ready.",
+          "confidence": 0.9,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "success",
+          "result": null,
+          "summary": "Summary drafted",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
+      },
+      "canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"5d0c7a3e-2b1f-4c8e-9a6d-3f1e7b2c4d5a\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Summary drafted\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.9,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"summarize\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true},{\"cons\":[],\"description\":\"defer\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_1\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":false}],\"options_considered\":[\"summarize\",\"defer\"],\"prompt_hash\":null,\"reasoning\":\"The report is ready.\",\"selected_option\":\"summarize\"},\"sequence\":0,\"trigger\":{\"correlation_id\":null,\"request\":\"Summarize the quarterly report\",\"source\":\"conformance\",\"timestamp\":\"2026-03-07T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "sha3_256_hash": "19b1ac993d8d45989ad4cef14e4c41286c62dfbe5ce29458a73ef8a2253977cc",
+      "model_document": {
+        "id": "5d0c7a3e-2b1f-4c8e-9a6d-3f1e7b2c4d5a",
+        "type": "agent",
+        "domain": "agents",
+        "parent_id": null,
+        "sequence": 0,
+        "previous_hash": null,
+        "spec_version": "1.0",
+        "trigger": {
+          "type": "user_request",
+          "source": "conformance",
+          "timestamp": "2026-03-07T12:00:00+00:00",
+          "request": "Summarize the quarterly report",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [
+            {
+              "id": "opt_0",
+              "description": "summarize",
+              "pros": [],
+              "cons": [],
+              "estimated_impact": {},
+              "feasibility": 0.0,
+              "risks": [],
+              "selected": true,
+              "rejection_reason": ""
+            },
+            {
+              "id": "opt_1",
+              "description": "defer",
+              "pros": [],
+              "cons": [],
+              "estimated_impact": {},
+              "feasibility": 0.0,
+              "risks": [],
+              "selected": false,
+              "rejection_reason": ""
+            }
+          ],
+          "options_considered": [
+            "summarize",
+            "defer"
+          ],
+          "selected_option": "summarize",
+          "reasoning": "The report is ready.",
+          "confidence": 0.9,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "success",
+          "result": null,
+          "summary": "Summary drafted",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        }
+      },
+      "model_canonical_json": "{\"authority\":{\"approver\":null,\"chain\":[],\"escalation_reason\":null,\"policy_reference\":null,\"type\":\"autonomous\"},\"context\":{\"agent_id\":\"\",\"environment\":{},\"session_id\":null},\"domain\":\"agents\",\"execution\":{\"duration_ms\":0,\"resources_used\":{},\"tool_calls\":[]},\"id\":\"5d0c7a3e-2b1f-4c8e-9a6d-3f1e7b2c4d5a\",\"outcome\":{\"error\":null,\"metrics\":{},\"result\":null,\"side_effects\":[],\"status\":\"success\",\"summary\":\"Summary drafted\"},\"parent_id\":null,\"previous_hash\":null,\"reasoning\":{\"analysis\":\"\",\"confidence\":0.9,\"model\":null,\"options\":[{\"cons\":[],\"description\":\"summarize\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_0\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":true},{\"cons\":[],\"description\":\"defer\",\"estimated_impact\":{},\"feasibility\":0.0,\"id\":\"opt_1\",\"pros\":[],\"rejection_reason\":\"\",\"risks\":[],\"selected\":false}],\"options_considered\":[\"summarize\",\"defer\"],\"prompt_hash\":null,\"reasoning\":\"The report is ready.\",\"selected_option\":\"summarize\"},\"sequence\":0,\"spec_version\":\"1.0\",\"trigger\":{\"correlation_id\":null,\"request\":\"Summarize the quarterly report\",\"source\":\"conformance\",\"timestamp\":\"2026-03-07T12:00:00+00:00\",\"type\":\"user_request\",\"user_id\":null},\"type\":\"agent\"}",
+      "model_sha3_256_hash": "efa0013a50b26755ab72096b527542090735074fd13d8769cfbda022313d230b",
+      "public_key_hex": "159664ab8f0c13dc09f15d43faffcc74bf757b6b482d781663a47562b8659a92",
+      "signature_hex": "29a7820e16393bf2e485d39d124b1261839c8f8c8f452badad4c3f42a517fec8ce7cadee42d727732617dfe9d979730baf019dfd00e4dee19204b2717446ed0f",
+      "sealed_record": {
+        "id": "5d0c7a3e-2b1f-4c8e-9a6d-3f1e7b2c4d5a",
+        "type": "agent",
+        "domain": "agents",
+        "parent_id": null,
+        "sequence": 0,
+        "previous_hash": null,
+        "trigger": {
+          "type": "user_request",
+          "source": "conformance",
+          "timestamp": "2026-03-07T12:00:00+00:00",
+          "request": "Summarize the quarterly report",
+          "correlation_id": null,
+          "user_id": null
+        },
+        "context": {
+          "agent_id": "",
+          "session_id": null,
+          "environment": {}
+        },
+        "reasoning": {
+          "analysis": "",
+          "options": [
+            {
+              "id": "opt_0",
+              "description": "summarize",
+              "pros": [],
+              "cons": [],
+              "estimated_impact": {},
+              "feasibility": 0.0,
+              "risks": [],
+              "selected": true,
+              "rejection_reason": ""
+            },
+            {
+              "id": "opt_1",
+              "description": "defer",
+              "pros": [],
+              "cons": [],
+              "estimated_impact": {},
+              "feasibility": 0.0,
+              "risks": [],
+              "selected": false,
+              "rejection_reason": ""
+            }
+          ],
+          "options_considered": [
+            "summarize",
+            "defer"
+          ],
+          "selected_option": "summarize",
+          "reasoning": "The report is ready.",
+          "confidence": 0.9,
+          "model": null,
+          "prompt_hash": null
+        },
+        "authority": {
+          "type": "autonomous",
+          "approver": null,
+          "policy_reference": null,
+          "chain": [],
+          "escalation_reason": null
+        },
+        "execution": {
+          "tool_calls": [],
+          "duration_ms": 0,
+          "resources_used": {}
+        },
+        "outcome": {
+          "status": "success",
+          "result": null,
+          "summary": "Summary drafted",
+          "error": null,
+          "side_effects": [],
+          "metrics": {}
+        },
+        "hash": "19b1ac993d8d45989ad4cef14e4c41286c62dfbe5ce29458a73ef8a2253977cc",
+        "signature": "29a7820e16393bf2e485d39d124b1261839c8f8c8f452badad4c3f42a517fec8ce7cadee42d727732617dfe9d979730baf019dfd00e4dee19204b2717446ed0f",
+        "signature_pq": "",
+        "signed_at": "2026-03-07T12:00:01+00:00",
+        "signed_by": "159664ab8f0c13dc"
+      }
+    }
+  ]
+}

@@ -280,9 +280,11 @@ INPUT:  Capsule with hash and signature fields populated
 OUTPUT: boolean
 
 1. Extract hash and signature from Capsule
-2. Clear hash, signature, signature_pq, signed_at, signed_by fields
-   (these are NOT part of the canonical content)
-3. Recompute canonical JSON from the Capsule content
+2. Take the content document the seal covers (Section 3.5): the document
+   exactly as it was stored, for a Capsule read back from storage, or
+   to_dict(), for a Capsule sealed in this process. Seal fields (hash,
+   signature, signature_pq, signed_at, signed_by) are NOT part of it
+3. Serialize that document to canonical JSON (Section 2)
 4. Compute SHA3-256 of canonical JSON
 5. Compare computed hash with stored hash (must match exactly)
 6. Verify Ed25519 signature over the stored hash string using public key
@@ -290,6 +292,21 @@ OUTPUT: boolean
 ```
 
 Note: The seal fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`) are metadata OUTSIDE the canonical content. The `to_dict()` method does not include them. Verification recomputes canonical JSON from the content fields only.
+
+### 3.5 Verify the Stored Document
+
+A verifier MUST hash the content document that was sealed, never a re-serialization of an in-memory model. Content fields are added to CPS over time: `spec_version` joined the canonical content in 1.5.3. A record sealed before a field existed never hashed that field, so a model that fills in the field's default re-serializes to a different hash and would report an intact record as tampered.
+
+1. An implementation that reads Capsules from storage MUST keep the stored content document with each Capsule it returns, and MUST hash that document when verifying.
+2. Keys present in the stored document but unknown to the model stay in the hashed document. Content stored beside the sealed fields therefore fails verification instead of being discarded before hashing.
+3. A Capsule changed in memory after it was read MUST fail verification. The model agrees with its stored document when every content value in the model equals the stored value, except a top-level field listed below that is absent from the stored document and still holds its default.
+4. Sealing a Capsule again covers its current model, and the stored document is forgotten.
+
+| Added field | Default | Joined the canonical content |
+|---|---|---|
+| `spec_version` | `"1.0"` | 1.5.3 |
+
+`conformance/stored-document-fixtures.json` carries a record sealed before `spec_version` existed, with a fixed test key.
 
 ---
 
@@ -375,7 +392,7 @@ If an attacker deletes the last N records from storage, the truncated chain stil
 Chain verification has two levels. Implementations SHOULD support both:
 
 1. **Structural verification** (fast): Check sequence numbers and `previous_hash` linkage. This trusts stored hash values without recomputing them.
-2. **Cryptographic verification** (thorough): Recompute SHA3-256 from content for each record and optionally verify Ed25519 signatures. This detects storage-level content tampering.
+2. **Cryptographic verification** (thorough): Recompute SHA3-256 from each record's stored content document (Section 3.5) and optionally verify Ed25519 signatures. This detects storage-level content tampering.
 
 Structural verification alone does not detect an attacker who modifies both content and the stored hash. Cryptographic verification catches this because the signature will not match the recomputed hash (unless the signing key is also compromised).
 

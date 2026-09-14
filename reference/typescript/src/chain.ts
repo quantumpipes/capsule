@@ -8,8 +8,8 @@
  */
 
 import type { Capsule } from "./capsule.js";
-import { toDict } from "./capsule.js";
-import { computeHash } from "./seal.js";
+import { contentForHash } from "./capsule.js";
+import { computeHashFromDict } from "./seal.js";
 
 export interface ChainVerificationResult {
   valid: boolean;
@@ -81,8 +81,9 @@ export function verifyChain(
     }
 
     if (verifyContent) {
-      const computed = computeHash(toDict(capsule));
-      if (computed !== capsule.hash) {
+      // Hash the stored document (CPS Section 3.5), never a re-serialized model.
+      const content = contentForHash(capsule);
+      if (content === null || computeHashFromDict(content) !== capsule.hash) {
         return {
           valid: false,
           error: `Content hash mismatch at sequence ${i}: stored hash does not match recomputed hash`,

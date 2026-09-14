@@ -632,7 +632,7 @@ class TestMain:
             main(["--version"])
         out = capsys.readouterr().out
         assert "capsule" in out
-        assert "1.5.3" in out
+        assert "1.5.4" in out
 
     def test_verify_via_main(self, seal, temp_dir, monkeypatch):
         monkeypatch.setenv("NO_COLOR", "1")
@@ -844,6 +844,15 @@ class TestVerifyWithExplicitPublicKey:
         path = _write_chain_json(chain, temp_dir / "chain.json")
         args = _build_parser().parse_args(["verify", str(path), "--pubkey", wrong_pub, "--quiet"])
         assert cmd_verify(args) == 1
+
+    def test_cli_unreadable_pubkey_file(self, seal, temp_dir, capsys):
+        chain = _make_sealed_chain(seal, 2)
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey-file", str(temp_dir / "missing.pub"), "--quiet"]
+        )
+        assert cmd_verify(args) == 2
+        assert "Error reading --pubkey-file" in capsys.readouterr().err
 
     def test_cli_pubkey_and_pubkey_file_conflict(self, seal, temp_dir):
         chain = _make_sealed_chain(seal, 1)

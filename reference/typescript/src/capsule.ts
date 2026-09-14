@@ -279,3 +279,91 @@ export function toDict(capsule: Capsule): CapsuleDict {
 export function isSealed(capsule: Capsule): boolean {
   return !!(capsule.hash && capsule.signature);
 }
+
+// ---------------------------------------------------------------------------
+// The stored document (CPS Section 3.5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Content fields added to CPS after capsules were already being sealed, with the
+ * value a reader fills in when a stored record predates the field. A record sealed
+ * before a field existed never hashed it, so verification does not demand it.
+ */
+export const ADDED_CONTENT_DEFAULTS: Readonly<Record<string, unknown>> = Object.freeze({
+  spec_version: "1.0",
+});
+
+const STORED_DOCUMENT = Symbol.for("qp.capsule.storedDocument");
+
+type WithStoredDocument = Capsule & { [STORED_DOCUMENT]?: Record<string, unknown> };
+
+/**
+ * Remember the exact content document a Capsule was read from, so verification
+ * hashes the document that was sealed. Pass `null` to forget it.
+ */
+export function withStoredDocument(
+  capsule: Capsule,
+  document: Record<string, unknown> | null,
+): Capsule {
+  if (document === null) {
+    delete (capsule as WithStoredDocument)[STORED_DOCUMENT];
+  } else {
+    Object.defineProperty(capsule, STORED_DOCUMENT, {
+      value: document,
+      enumerable: false,
+      configurable: true,
+      writable: true,
+    });
+  }
+  return capsule;
+}
+
+/** The content document a Capsule was read from, or `undefined` for a fresh Capsule. */
+export function storedDocument(capsule: Capsule): Record<string, unknown> | undefined {
+  return (capsule as WithStoredDocument)[STORED_DOCUMENT];
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function agrees(model: unknown, stored: unknown, topLevel: boolean): boolean {
+  if (Array.isArray(model)) {
+    return (
+      Array.isArray(stored) &&
+      model.length === stored.length &&
+      model.every((item, i) => agrees(item, stored[i], false))
+    );
+  }
+  if (isPlainObject(model)) {
+    if (!isPlainObject(stored)) return false;
+    for (const [key, value] of Object.entries(model)) {
+      if (Object.prototype.hasOwnProperty.call(stored, key)) {
+        if (!agrees(value, stored[key], false)) return false;
+      } else if (
+        !(
+          topLevel &&
+          Object.prototype.hasOwnProperty.call(ADDED_CONTENT_DEFAULTS, key) &&
+          value === ADDED_CONTENT_DEFAULTS[key]
+        )
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return model === stored;
+}
+
+/**
+ * The content document a seal covers: the stored document for a Capsule read from
+ * storage, otherwise `toDict()`. Returns `null` when the Capsule was changed after it
+ * was read, which verification reports as a hash mismatch.
+ */
+export function contentForHash(capsule: Capsule): Record<string, unknown> | null {
+  const model = toDict(capsule) as unknown as Record<string, unknown>;
+  const document = storedDocument(capsule);
+  if (document === undefined) return model;
+  return agrees(model, document, true) ? document : null;
+}
+

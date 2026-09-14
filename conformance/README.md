@@ -52,6 +52,16 @@ If all 16 pass, your implementation is conformant.
 
 ---
 
+## Stored-Document Vector
+
+`stored-document-fixtures.json` holds one record, `sealed_before_spec_version`, sealed before `spec_version` joined the canonical content (CPS Section 3.5). It lists the stored document with its canonical JSON and hash, the model document a reader re-serializes with `spec_version: "1.0"` filled in and that different hash, and an Ed25519 test key and signature over the stored hash.
+
+A conformant verifier accepts `sealed_record`: the stored document hashes to `sha3_256_hash`, and the signature verifies under `public_key_hex`. Hashing `model_document` instead yields `model_sha3_256_hash`, which does not match the seal. The key derives from a public seed and signs nothing else.
+
+Regenerate it with `python conformance/generate_stored_document_fixtures.py`.
+
+---
+
 ## Generating Fixtures
 
 The fixture generator is written in Python but produces language-agnostic JSON:

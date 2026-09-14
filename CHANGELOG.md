@@ -9,8 +9,24 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.5.4] - 2026-09-14
+
+### Fixed
+
+- **Verification hashes the stored document (CPS Section 3.5).** Since 1.5.3 added `spec_version` to the canonical content, every capsule sealed before that field existed failed `Seal.verify`, `Seal.verify_with_key_detailed`, and `CapsuleChain.verify(verify_content=True)` with `HASH_MISMATCH`, although its stored document still matched its seal. Verifiers re-serialized the current model instead of the document that was signed. Storage now keeps the exact stored content document with each Capsule it returns, and verification hashes that document. On a long-running store, every record that failed this way verifies after the fix.
+- **Content stored beside the sealed fields is caught.** Loading dropped keys the model does not know, so a key injected into a stored record's document was discarded before hashing and verification passed. Those keys now stay in the hashed document and fail verification.
+
 ### Added
 
+- **Stored-document API.** Python: `attach_stored_document`, `stored_document`, `content_for_hash`, `to_stored_sealed_dict`, and `ADDED_CONTENT_DEFAULTS`. TypeScript: `withStoredDocument`, `storedDocument`, `contentForHash`, and `ADDED_CONTENT_DEFAULTS`. A Capsule changed in memory after it was read still fails verification, and sealing a Capsule again forgets its stored document.
+- **`Capsule.from_sealed_dict` remembers the content document it was given**, so exported records verify the same way stored ones do.
+- **`conformance/stored-document-fixtures.json`**: a record sealed before `spec_version` existed, with a fixed test key, for every implementation to verify.
+
+### Tests
+
+- **Both reference implementations meet their 100% coverage gates again.** Python covers the storage initialization failure paths and the unreadable `--pubkey-file` error. TypeScript covers every `validateCapsuleDict` rejection path and both `verifyDetailed` error handlers; `src/index.ts` only re-exports, so coverage excludes it and `exports.test.ts` checks each public name.
 - **CLI offline third-party verification** (`capsule verify --pubkey <hex>` and `--pubkey-file <path>`): verify a chain's Ed25519 signatures against an explicit signer public key with no keyring, no database, and no access to the signing key. Implies `--signatures`; built on the existing `Seal.verify_with_key_detailed`. `verify_chain()` gains an optional `public_key` parameter (boolean/keyring paths unchanged). Adds 7 CLI tests covering correct key, wrong key, tampered content, both flags, exit codes, and flag conflict.
 
 ---
