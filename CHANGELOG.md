@@ -31,6 +31,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Both reference implementations meet their 100% coverage gates again.** Python covers the storage initialization failure paths and the unreadable `--pubkey-file` error. TypeScript covers every `validateCapsuleDict` rejection path and both `verifyDetailed` error handlers; `src/index.ts` only re-exports, so coverage excludes it and `exports.test.ts` checks each public name.
 - **The Python suite runs on current FastAPI, Starlette, and anyio.** Starlette 1.6 and anyio 4.15 raise deprecation warnings when `TestClient` loads, and the suite treats warnings as errors, so collection stopped before any test ran. The two named warnings are ignored. The route test reads OpenAPI paths, because FastAPI 0.141 keeps included routers as nodes with no `path`.
+- **The Python release uploads current wheel metadata.** hatchling 1.32 writes metadata version 2.5, which the pinned PyPI publish action (twine 6.1) rejected. The release workflow now pins `pypa/gh-action-pypi-publish` v1.14.2 (twine 7.0).
 
 ---
 
