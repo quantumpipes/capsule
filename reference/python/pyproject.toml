@@ -96,7 +96,13 @@ warn_unused_configs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-filterwarnings = ["error"]
+filterwarnings = [
+    "error",
+    # starlette 1.6+ asks TestClient users to move from httpx to httpx2; httpx is still the supported test client here.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+    # starlette's test client still names anyio.abc.BlockingPortal, an alias newer anyio deprecates.
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning",
+]
 
 [tool.coverage.run]
 source = ["qp_capsule"]

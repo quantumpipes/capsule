@@ -83,7 +83,8 @@ class TestFastAPIImportError:
 class TestMountCapsules:
     def test_mount_adds_routes(self, app_and_capsules) -> None:
         app, _ = app_and_capsules
-        routes = [r.path for r in app.routes]
+        # FastAPI 0.141+ keeps included routers as nodes without a path, so read the OpenAPI paths.
+        routes = list(app.openapi()["paths"])
         assert "/capsules/" in routes
         assert "/capsules/verify" in routes
         assert "/capsules/{capsule_id}" in routes
