@@ -337,7 +337,11 @@ function agrees(model: unknown, stored: unknown, topLevel: boolean): boolean {
   }
   if (isPlainObject(model)) {
     if (!isPlainObject(stored)) return false;
-    for (const [key, value] of Object.entries(model)) {
+    // A key holding `undefined` is absent in JSON, so it counts as absent here too.
+    const entries = Object.entries(model).filter(([, value]) => value !== undefined);
+    // Below the top level both must hold the same keys, so a nested value removed in memory is a change.
+    if (!topLevel && Object.keys(stored).length !== entries.length) return false;
+    for (const [key, value] of entries) {
       if (Object.prototype.hasOwnProperty.call(stored, key)) {
         if (!agrees(value, stored[key], false)) return false;
       } else if (
@@ -366,4 +370,3 @@ export function contentForHash(capsule: Capsule): Record<string, unknown> | null
   if (document === undefined) return model;
   return agrees(model, document, true) ? document : null;
 }
-

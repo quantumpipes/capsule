@@ -82,8 +82,14 @@ export function verifyChain(
 
     if (verifyContent) {
       // Hash the stored document (CPS Section 3.5), never a re-serialized model.
-      const content = contentForHash(capsule);
-      if (content === null || computeHashFromDict(content) !== capsule.hash) {
+      let matches: boolean;
+      try {
+        const content = contentForHash(capsule);
+        matches = content !== null && computeHashFromDict(content) === capsule.hash;
+      } catch {
+        matches = false;
+      }
+      if (!matches) {
         return {
           valid: false,
           error: `Content hash mismatch at sequence ${i}: stored hash does not match recomputed hash`,

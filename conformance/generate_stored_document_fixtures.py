@@ -15,6 +15,7 @@ import hashlib
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 from nacl.signing import SigningKey
@@ -25,15 +26,18 @@ from qp_capsule import Capsule, CapsuleType, OutcomeSection, ReasoningSection, T
 TEST_SEED = hashlib.sha3_256(b"cps-conformance/stored-document/test-key").digest()
 
 
-def canonical_json(d: dict) -> str:
+def canonical_json(d: dict[str, Any]) -> str:
+    """Canonical JSON per CPS Section 2: sorted keys, literal UTF-8, no whitespace."""
     return json.dumps(d, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
 def sha3_256_hex(s: str) -> str:
+    """SHA3-256 hex digest of a UTF-8 string, per CPS Section 3.1."""
     return hashlib.sha3_256(s.encode("utf-8")).hexdigest()
 
 
 def main() -> None:
+    """Build the vector and write stored-document-fixtures.json beside this script."""
     capsule = Capsule(
         id=UUID("5d0c7a3e-2b1f-4c8e-9a6d-3f1e7b2c4d5a"),
         type=CapsuleType.AGENT,

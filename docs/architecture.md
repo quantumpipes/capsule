@@ -194,11 +194,11 @@ capsule.signed_at, capsule.signed_by ← filled
 
 ### Verification Process
 
-<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:338-385 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py (verify_detailed, _recompute_content_hash), reference/python/src/qp_capsule/capsule.py (content_for_hash) -->
 
 Verification re-derives the hash from content and checks it against the stored hash and signature:
 
-1. Recompute SHA3-256 hash from `capsule.to_dict()` using canonical JSON
+1. Recompute SHA3-256 hash from the stored content document using canonical JSON. A Capsule read from storage keeps that document; a fresh Capsule uses `capsule.to_dict()`. A Capsule changed after it was read fails (spec Section 3.5).
 2. Compare computed hash to `capsule.hash` (detects content tampering)
 3. Verify Ed25519 signature against the hash (detects forgery)
 4. Optionally verify ML-DSA-65 signature (if `verify_pq=True`)

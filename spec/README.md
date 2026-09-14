@@ -2,7 +2,7 @@
 
 **Version**: 1.0
 **Status**: Active
-**Last Updated**: 2026-03-23
+**Last Updated**: 2026-09-14
 
 ---
 
@@ -291,7 +291,7 @@ OUTPUT: boolean
 7. Return true only if both hash and signature verify
 ```
 
-Note: The seal fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`) are metadata OUTSIDE the canonical content. The `to_dict()` method does not include them. Verification recomputes canonical JSON from the content fields only.
+Note: The seal fields (`hash`, `signature`, `signature_pq`, `signed_at`, `signed_by`) are metadata OUTSIDE the canonical content. The `to_dict()` method does not include them. Verification hashes the content document only (Section 3.5), never the seal fields.
 
 ### 3.5 Verify the Stored Document
 
@@ -299,7 +299,7 @@ A verifier MUST hash the content document that was sealed, never a re-serializat
 
 1. An implementation that reads Capsules from storage MUST keep the stored content document with each Capsule it returns, and MUST hash that document when verifying.
 2. Keys present in the stored document but unknown to the model stay in the hashed document. Content stored beside the sealed fields therefore fails verification instead of being discarded before hashing.
-3. A Capsule changed in memory after it was read MUST fail verification. The model agrees with its stored document when every content value in the model equals the stored value, except a top-level field listed below that is absent from the stored document and still holds its default.
+3. A Capsule changed in memory after it was read MUST fail verification. The model agrees with its stored document when every content value in the model equals the stored value as the same JSON kind (a boolean never equals a number), and below the top level both hold the same keys. The only allowed top-level differences are keys the model does not know, which stay in the hashed document, and a field listed below that is absent from the stored document and still holds its default.
 4. Sealing a Capsule again covers its current model, and the stored document is forgotten.
 
 | Added field | Default | Joined the canonical content |

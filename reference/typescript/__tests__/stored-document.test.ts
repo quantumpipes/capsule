@@ -196,6 +196,27 @@ describe("agreement between the model and the stored document", () => {
     expect((await verifyDetailed(capsule, await publicKey)).code).toBe("hash_mismatch");
   });
 
+  it("treats a key holding undefined as absent", () => {
+    const { capsule, document } = loaded();
+    delete document.parent_id;
+    (capsule as unknown as Record<string, unknown>).parent_id = undefined;
+    expect(contentForHash(capsule)).toBe(document);
+  });
+
+  it("treats a stored nested key absent from the model as a change", () => {
+    const { capsule, document } = loaded();
+    (document.context as Record<string, unknown>).environment = { removed_in_memory: 1 };
+    expect(contentForHash(capsule)).toBeNull();
+  });
+
+  it("fails chain verification when content cannot be hashed", () => {
+    const capsule = readSealedRecord(vector.sealed_record);
+    const loop: Record<string, unknown> = {};
+    loop.self = loop;
+    withStoredDocument(capsule, { ...(storedDocument(capsule) as Record<string, unknown>), loop });
+    expect(verifyChain([capsule], { verifyContent: true }).valid).toBe(false);
+  });
+
   it("keeps the stored document out of serialization and forgets it on request", () => {
     const { capsule } = loaded();
     expect(Object.keys(capsule)).not.toContain("storedDocument");

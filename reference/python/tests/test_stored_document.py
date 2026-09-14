@@ -25,10 +25,11 @@ from qp_capsule import (
     stored_document,
     to_stored_sealed_dict,
 )
-from qp_capsule.capsule import ReasoningSection, TriggerSection
+from qp_capsule.capsule import CapsuleType, ReasoningSection, TriggerSection, _agrees
 from qp_capsule.chain import CapsuleChain
 from qp_capsule.seal import Seal, SealVerifyCode
 from qp_capsule.storage import CapsuleModel, CapsuleStorage
+from qp_capsule.storage_pg import CapsuleStoragePG
 
 _FIXTURES_PATH = (
     Path(__file__).resolve().parents[3] / "conformance" / "stored-document-fixtures.json"
@@ -164,6 +165,20 @@ class TestAgreement:
         capsule, document = self._loaded()
         document["injected"] = "unsigned"
         assert content_for_hash(capsule) is document
+
+    def test_stored_nested_key_absent_from_the_model_is_a_change(self) -> None:
+        capsule, document = self._loaded()
+        document["context"]["environment"] = {"removed_in_memory": 1}
+        assert content_for_hash(capsule) is None
+
+    def test_scalar_kinds(self) -> None:
+        assert _agrees(True, True, top_level=False)
+        assert not _agrees(True, 1, top_level=False)
+        assert not _agrees(0, False, top_level=False)
+        assert _agrees(1, 1.0, top_level=False)
+        assert _agrees(CapsuleType.TOOL, "tool", top_level=False)
+        assert _agrees(None, None, top_level=False)
+        assert not _agrees(None, "", top_level=False)
 
     def test_added_defaults_name_spec_version(self) -> None:
         assert ADDED_CONTENT_DEFAULTS == {"spec_version": "1.0"}
@@ -334,3 +349,58 @@ class TestStorageInitialization:
         assert engine.disposed == 1
         assert storage._session_factory is winner
         assert storage._engine is None
+
+
+class TestStorageEdges:
+    def test_postgres_storage_keeps_the_stored_document(self) -> None:
+        from types import SimpleNamespace
+
+        document = _capsule().to_dict()
+        row = SimpleNamespace(
+            data=json.dumps(document),
+            hash="ab" * 32,
+            signature="cd" * 64,
+            signature_pq=None,
+            signed_at=None,
+            signed_by="",
+        )
+        capsule = CapsuleStoragePG._to_capsule(object.__new__(CapsuleStoragePG), row)
+        assert stored_document(capsule) == document
+
+    @pytest.mark.asyncio
+    async def test_chain_mixing_older_and_newer_records_verifies(
+        self, temp_storage: CapsuleStorage, temp_seal: Seal
+    ) -> None:
+        chain = CapsuleChain(temp_storage)
+        for _ in range(2):
+            capsule = await chain.add(_capsule())
+            temp_seal.seal(capsule)
+            await temp_storage.store(capsule)
+        signing_key, _ = temp_seal._ensure_keys()
+        await temp_storage._ensure_db()
+        async with temp_storage._get_session_factory()() as session:
+            last = (
+                await session.execute(select(CapsuleModel).where(CapsuleModel.sequence == 1))
+            ).scalar_one()
+            data = json.loads(last.data)
+            del data["spec_version"]
+            last.hash = _sha3(data)
+            last.signature = signing_key.sign(last.hash.encode("utf-8")).signature.hex()
+            last.data = json.dumps(data)
+            await session.commit()
+        result = await chain.verify(seal=temp_seal)
+        assert result.valid, result.error
+        assert result.capsules_verified == 2
+
+    @pytest.mark.asyncio
+    async def test_content_that_cannot_be_hashed_fails_chain_verification(
+        self, temp_storage: CapsuleStorage, temp_seal: Seal, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        await _store_one(temp_storage, temp_seal)
+
+        def too_deep(capsule: Capsule) -> dict:
+            raise RecursionError("maximum recursion depth exceeded")
+
+        monkeypatch.setattr("qp_capsule.chain.content_for_hash", too_deep)
+        result = await CapsuleChain(temp_storage).verify(verify_content=True)
+        assert result.valid is False

@@ -712,4 +712,3 @@ def _recompute_content_hash(capsule: Capsule) -> tuple[str, SealVerificationResu
             SealVerifyCode.HASH_MISMATCH,
             f"could not compute content hash: {e!s}",
         )
-

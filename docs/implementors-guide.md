@@ -131,7 +131,8 @@ Implementations SHOULD support two verification levels (see [CPS Section 7.5](..
 
 ```
 All structural checks, plus:
-5. For each Capsule, recompute SHA3-256 from content via to_dict() + canonicalize()
+5. For each Capsule, recompute SHA3-256 from its stored content document + canonicalize()
+   (the document exactly as stored, never a re-serialized model; spec Section 3.5)
 6. Compare recomputed hash to stored hash (detects storage-level tampering)
 7. Optionally verify Ed25519 signature on each Capsule
 ```

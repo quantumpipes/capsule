@@ -168,8 +168,12 @@ class CapsuleChain:
 
             if verify_content:
                 # Hash the stored document (CPS Section 3.5), never a re-serialized model.
-                document = content_for_hash(capsule)
-                if document is None or compute_hash(document) != capsule.hash:
+                try:
+                    document = content_for_hash(capsule)
+                    matches = document is not None and compute_hash(document) == capsule.hash
+                except (RecursionError, TypeError, ValueError):
+                    matches = False
+                if not matches:
                     return ChainVerificationResult(
                         valid=False,
                         error=f"Content hash mismatch at sequence {i}",

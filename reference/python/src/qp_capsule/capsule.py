@@ -673,6 +673,8 @@ class Capsule:
 #: Content fields added to CPS after capsules were already being sealed, with the
 #: value a reader fills in when a stored record predates the field. A record sealed
 #: before a field existed never hashed it, so verification does not demand it.
+#: Only list a field whose default means "absent": a legacy record shows that default
+#: as though it were signed, so a security-relevant field never belongs here.
 ADDED_CONTENT_DEFAULTS: dict[str, Any] = {"spec_version": "1.0"}
 
 _STORED_DOCUMENT_ATTR = "_qp_stored_document"
@@ -703,10 +705,36 @@ def stored_document(capsule: Capsule) -> dict[str, Any] | None:
     return document if isinstance(document, dict) else None
 
 
+def _same_scalar(model: Any, stored: Any) -> bool:
+    """
+    Compare two JSON scalars by kind as well as value.
+
+    Booleans never equal numbers, an int equals the same float (one JSON number),
+    strings compare as strings (so a ``StrEnum`` equals its value), and anything
+    else must share its exact type.
+    """
+    if isinstance(model, bool) or isinstance(stored, bool):
+        return isinstance(model, bool) and isinstance(stored, bool) and model == stored
+    if isinstance(model, (int, float)) and isinstance(stored, (int, float)):
+        return bool(model == stored)
+    if isinstance(model, str) and isinstance(stored, str):
+        return bool(model == stored)
+    return type(model) is type(stored) and bool(model == stored)
+
+
 def _agrees(model: Any, stored: Any, *, top_level: bool) -> bool:
-    """True when every value in the model equals the stored value (CPS Section 3.5, rule 3)."""
+    """
+    True when the model matches its stored document (CPS Section 3.5, rule 3).
+
+    Below the top level both must hold the same keys, so a nested value removed in
+    memory is a change. At the top level the stored document may carry keys the model
+    does not know (they stay in the hash) and may lack a field added to CPS later
+    that still holds its default.
+    """
     if isinstance(model, dict):
         if not isinstance(stored, dict):
+            return False
+        if not top_level and set(model) != set(stored):
             return False
         for key, value in model.items():
             if key in stored:
@@ -725,7 +753,7 @@ def _agrees(model: Any, stored: Any, *, top_level: bool) -> bool:
             and len(model) == len(stored)
             and all(_agrees(a, b, top_level=False) for a, b in zip(model, stored, strict=True))
         )
-    return bool(model == stored)
+    return _same_scalar(model, stored)
 
 
 def content_for_hash(capsule: Capsule) -> dict[str, Any] | None:
@@ -761,4 +789,3 @@ def to_stored_sealed_dict(capsule: Capsule) -> dict[str, Any]:
     if document is None:
         return sealed
     return {**document, **{name: sealed[name] for name in _SEAL_FIELD_NAMES}}
-

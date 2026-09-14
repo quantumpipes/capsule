@@ -5,6 +5,7 @@ Tests cover the CLI entry point, verification logic, inspection,
 key management, and the hash utility.
 """
 
+import hashlib
 import json
 import tempfile
 from io import StringIO
@@ -844,6 +845,34 @@ class TestVerifyWithExplicitPublicKey:
         path = _write_chain_json(chain, temp_dir / "chain.json")
         args = _build_parser().parse_args(["verify", str(path), "--pubkey", wrong_pub, "--quiet"])
         assert cmd_verify(args) == 1
+
+    def test_cli_verifies_record_sealed_before_spec_version(self, seal, temp_dir):
+        """A JSON record sealed before spec_version passes content and signature checks."""
+        document = _make_sealed_chain(seal, 1)[0].to_dict()
+        del document["spec_version"]
+        canonical = json.dumps(
+            document, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        )
+        record_hash = hashlib.sha3_256(canonical.encode("utf-8")).hexdigest()
+        signing_key, _ = seal._ensure_keys()
+        record = {
+            **document,
+            "hash": record_hash,
+            "signature": signing_key.sign(record_hash.encode("utf-8")).signature.hex(),
+            "signature_pq": "",
+            "signed_at": None,
+            "signed_by": seal.get_key_fingerprint(),
+        }
+        path = temp_dir / "old_chain.json"
+        path.write_text(json.dumps([record]), encoding="utf-8")
+
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey", seal.get_public_key(), "--quiet"]
+        )
+        assert cmd_verify(args) == 0
+        exported = _capsule_to_full_dict(_capsule_from_full_dict(record))
+        assert "spec_version" not in exported
+        assert exported["hash"] == record_hash
 
     def test_cli_unreadable_pubkey_file(self, seal, temp_dir, capsys):
         chain = _make_sealed_chain(seal, 2)

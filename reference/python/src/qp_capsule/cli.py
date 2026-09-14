@@ -31,11 +31,10 @@ import json
 import os
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Any, TextIO
 
-from qp_capsule.capsule import Capsule
+from qp_capsule.capsule import Capsule, content_for_hash, to_stored_sealed_dict
 from qp_capsule.keyring import Keyring
 from qp_capsule.seal import Seal, compute_hash
 
@@ -134,27 +133,13 @@ class VerifyResult:
 
 
 def _capsule_from_full_dict(data: dict[str, Any]) -> Capsule:
-    """Reconstruct a Capsule from a dict that includes seal metadata."""
-    capsule = Capsule.from_dict(data)
-    capsule.hash = data.get("hash", "")
-    capsule.signature = data.get("signature", "")
-    capsule.signature_pq = data.get("signature_pq", "")
-    signed_at = data.get("signed_at")
-    if signed_at:
-        capsule.signed_at = datetime.fromisoformat(signed_at)
-    capsule.signed_by = data.get("signed_by", "")
-    return capsule
+    """Reconstruct a Capsule from a sealed record, remembering its stored document (CPS 3.5)."""
+    return Capsule.from_sealed_dict(data)
 
 
 def _capsule_to_full_dict(capsule: Capsule) -> dict[str, Any]:
-    """Serialize a Capsule to a dict including seal metadata."""
-    d = capsule.to_dict()
-    d["hash"] = capsule.hash
-    d["signature"] = capsule.signature
-    d["signature_pq"] = capsule.signature_pq
-    d["signed_at"] = capsule.signed_at.isoformat() if capsule.signed_at else None
-    d["signed_by"] = capsule.signed_by
-    return d
+    """Serialize a Capsule's sealed record as it was stored, so exports keep verifying (CPS 3.5)."""
+    return to_stored_sealed_dict(capsule)
 
 
 def _load_capsules_from_json(path: Path) -> list[Capsule]:
@@ -242,8 +227,9 @@ def verify_chain(
                 break
 
         if do_content:
-            computed = compute_hash(capsule.to_dict())
-            if computed != capsule.hash:
+            # Hash the stored document (CPS Section 3.5), never a re-serialized model.
+            document = content_for_hash(capsule)
+            if document is None or compute_hash(document) != capsule.hash:
                 errors.append(
                     VerifyError(i, str(capsule.id), f"Content hash mismatch at sequence {i}")
                 )
