@@ -1,6 +1,14 @@
 # EU AI Act
 
-The EU AI Act (Regulation 2024/1689) establishes requirements for AI systems operating in the EU. Key obligations take effect August 2, 2026.
+The EU AI Act (Regulation 2024/1689) establishes requirements for AI systems operating in the EU.
+
+**Dates, corrected 2026-09-19.** Regulation (EU) 2026/1744, in force 27 July 2026, deferred the
+high-risk regime. Annex III obligations apply from **2 December 2027** and Annex I embedded
+high-risk from **2 August 2028**. Article 50 transparency and the Chapter V general-purpose AI
+obligations were not deferred and apply now. Two new Article 5 prohibitions apply from
+2 December 2026. The previous text here said obligations take effect August 2, 2026, which was
+the pre-amendment date. See `documentation/research/ai-regulation/01-eu.md` for the article-level
+map and `09-verification-log.md` for the primary-source check.
 
 ---
 
