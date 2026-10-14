@@ -25,7 +25,10 @@ Concurrency:
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import random
+import weakref
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -41,6 +44,46 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 _MAX_CHAIN_RETRIES = 3
+
+# Upper bound, in seconds, of the random wait before retry N (scaled by N).
+# Only writers in OTHER processes reach a retry once the in-process lock below
+# is held, so this spreads them apart instead of re-colliding on the next tick.
+_RETRY_JITTER_S = 0.05
+
+# One lock per (event loop, storage target). Writers in one process used to
+# race each other through read-head, seal, store: at AskQP desktop startup
+# five producers emitted at once, each round only one won, and the fourth and
+# fifth losers exhausted three retries and dropped their audit records
+# (`ChainConflictError`, measured 2026-10-14 in launch after launch). Holding
+# a lock across the whole sequence turns that race into a queue.
+_chain_locks: weakref.WeakKeyDictionary[
+    asyncio.AbstractEventLoop, dict[object, asyncio.Lock]
+] = weakref.WeakKeyDictionary()
+
+
+def _storage_key(storage: object) -> object:
+    """Identify the database a storage writes to, not the Python object.
+
+    Several storage objects may point at one database (a service that builds
+    its own, a request-scoped one), and they share one chain, so they must
+    share one lock. Falls back to object identity when the target is unknown.
+    """
+    for attr in ("database_url", "db_path"):
+        target = getattr(storage, attr, None)
+        if target is not None:
+            return (attr, str(target))
+    return ("id", id(storage))
+
+
+def _chain_lock(storage: object) -> asyncio.Lock:
+    """The lock that serializes chain writes to ``storage`` on this loop."""
+    loop = asyncio.get_running_loop()
+    locks = _chain_locks.setdefault(loop, {})
+    key = _storage_key(storage)
+    lock = locks.get(key)
+    if lock is None:
+        lock = locks[key] = asyncio.Lock()
+    return lock
 
 
 @dataclass
@@ -258,19 +301,33 @@ class CapsuleChain:
         """
         Chain, seal, and store a Capsule in one call.
 
-        Uses optimistic retry to handle concurrent writes: if another writer
-        claims the same sequence number, the UNIQUE constraint on the storage
-        backend rejects the duplicate and this method retries with the updated
-        chain head. Retries up to ``_MAX_CHAIN_RETRIES`` times.
+        Writers in one process take turns: a per-storage lock is held from
+        reading the chain head through the store, so they never claim the
+        same sequence. Writers in other processes are handled by optimistic
+        retry: the UNIQUE constraint on the storage backend rejects a
+        duplicate sequence and this method waits a short random time, then
+        retries with the updated chain head, up to ``_MAX_CHAIN_RETRIES``
+        times.
 
         Raises:
             ChainConflictError: If all retries are exhausted.
         """
+        async with _chain_lock(self.storage):
+            return await self._seal_and_store_locked(capsule, seal, tenant_id)
+
+    async def _seal_and_store_locked(
+        self,
+        capsule: Capsule,
+        seal: Seal | None,
+        tenant_id: str | None,
+    ) -> Capsule:
         from qp_capsule.seal import Seal as SealCls
 
         seal_instance = seal or SealCls()
 
         for attempt in range(_MAX_CHAIN_RETRIES):
+            if attempt:
+                await asyncio.sleep(random.uniform(0, _RETRY_JITTER_S * attempt))  # noqa: S311 - jitter, not security
             capsule = await self.add(capsule, tenant_id=tenant_id)
             capsule = seal_instance.seal(capsule)
 

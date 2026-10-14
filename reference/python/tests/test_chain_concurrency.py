@@ -17,6 +17,7 @@ Validates:
     - Warning emitted on conflict
 """
 
+import asyncio
 import logging
 from unittest.mock import AsyncMock
 
@@ -336,6 +337,63 @@ class TestSealAndStoreIntegration:
         stored = await temp_chain.seal_and_store(_make_capsule("auto-seal"))
         assert stored.is_sealed()
         assert stored.sequence == 0
+
+
+class TestSealAndStoreBurst:
+    """Writers in one process take turns instead of exhausting retries.
+
+    The AskQP desktop sidecar emits from several producers at once during
+    startup, each through its own ``CapsuleChain``. Before the in-process lock
+    only one writer per round won the sequence, so with more writers than
+    retries the last ones raised ``ChainConflictError`` and their audit
+    records were lost.
+    """
+
+    WRITERS = 12
+
+    @pytest.mark.asyncio
+    async def test_concurrent_writers_all_land(self, tmp_path, temp_seal):
+        """A burst larger than the retry budget stores every capsule."""
+        from sqlalchemy.pool import NullPool
+
+        from qp_capsule.storage import CapsuleStorage
+
+        db_path = tmp_path / "burst.db"
+        # Separate storage objects on one database share one chain, so they
+        # must share one lock.
+        storages = [CapsuleStorage(db_path=db_path, poolclass=NullPool) for _ in range(3)]
+        try:
+            for storage in storages:  # create the table up front; only the chain write races
+                await storage.get_latest()
+            stored = await asyncio.gather(
+                *(
+                    CapsuleChain(storages[i % len(storages)]).seal_and_store(
+                        _make_capsule(f"burst-{i}"), seal=temp_seal
+                    )
+                    for i in range(self.WRITERS)
+                )
+            )
+
+            assert sorted(c.sequence for c in stored) == list(range(self.WRITERS))
+            result = await CapsuleChain(storages[0]).verify(seal=temp_seal)
+            assert result.valid is True
+            assert result.capsules_verified == self.WRITERS
+        finally:
+            for storage in storages:
+                await storage.close()
+
+    def test_storage_key_names_the_database_not_the_object(self, tmp_path):
+        """Two storages on one database share a key; different ones do not."""
+        from types import SimpleNamespace
+
+        from qp_capsule.chain import _storage_key
+
+        a = SimpleNamespace(db_path=tmp_path / "x.db")
+        b = SimpleNamespace(db_path=tmp_path / "x.db")
+        c = SimpleNamespace(database_url="postgresql://h/db")
+        assert _storage_key(a) == _storage_key(b)
+        assert _storage_key(a) != _storage_key(c)
+        assert _storage_key(object()) != _storage_key(object())
 
 
 # =============================================================================

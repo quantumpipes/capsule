@@ -9,6 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Writers in one process no longer drop capsules to each other.** `CapsuleChain.seal_and_store` now holds a per-database lock from reading the chain head through the store. Before, every concurrent writer in a process read the same head, only one won each round, and with more writers than `_MAX_CHAIN_RETRIES` the rest raised `ChainConflictError` and lost the record. Measured on the AskQP desktop sidecar 2026-10-14: an `integration.export.started` capsule was dropped at startup in launch after launch. The lock is keyed by `database_url` or `db_path`, so separate storage objects on one database share it. Writers in other processes still use optimistic retry, now with a short random wait between attempts.
+
 ---
 
 ## [1.5.4] - 2026-09-14
