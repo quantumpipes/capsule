@@ -71,6 +71,11 @@ jobs:
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
+      # Trusted publishing (OIDC, no stored token) needs npm 11.5.1 or later, and
+      # Node 22 ships npm 10. Pinned to a release more than two weeks old.
+      # Agentic-threat audit R9: once npmjs.com trusts this workflow, the
+      # NODE_AUTH_TOKEN env below and its repo secret are deleted.
+      - run: npm install -g npm@11.21.0
       - run: npm ci
       - run: npx tsc
       - name: Extract version from tag
