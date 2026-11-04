@@ -1,7 +1,7 @@
 ---
 title: "Capsule Architecture"
 description: "Complete technical architecture of Capsule: the 6-section record model, cryptographic sealing, hash chain integrity, and storage backends."
-date_modified: "2026-03-09"
+date_modified: "2026-11-04"
 ai_context: |
   Full architecture of the Capsule system. Covers the 6-section Capsule model
   (Trigger, Context, Reasoning, Authority, Execution, Outcome), two-tier
@@ -337,8 +337,8 @@ All storage backends implement `CapsuleStorageProtocol`, a runtime-checkable `ty
 
 | Backend | Install | Table | Multi-Tenant | Use Case |
 |---|---|---|---|---|
-| `CapsuleStorage` | `qp-capsule[storage]` | `capsules` | No (`tenant_id` accepted, ignored) | Development, single-node |
-| `PostgresCapsuleStorage` | `qp-capsule[postgres]` | `quantumpipes_capsules` | Yes (`tenant_id` filters all queries) | Production, multi-tenant |
+| `CapsuleStorage` | `qp-capsule[storage]` | `capsules` | No (`tenant_id` accepted, ignored) | Single-node, production included (WAL) |
+| `PostgresCapsuleStorage` | `qp-capsule[postgres]` | `quantumpipes_capsules` | Yes (`tenant_id` filters all queries) | Multi-tenant server |
 
 ### Custom Backends
 
