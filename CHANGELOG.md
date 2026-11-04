@@ -11,6 +11,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.6] - 2026-11-04
+
+### Fixed
+
+- **A failed commit can no longer leave a gap in the chain.** When a capsule's COMMIT failed with `database is locked`, its connection went back to the pool still inside that write. The next writer read the chain head through it, saw the unsaved capsule, and linked to it. The stored chain then held a capsule whose `previous_hash` named a capsule nobody could produce. This was measured on a desktop chain on 2026-10-29 (three gaps) and 2026-11-04 (one more). `CapsuleStorage` now invalidates a connection whose write fails, so the unsaved capsule dies with it.
+
+### Added
+
+- **`CapsuleStorage.store_linked()`.** After the INSERT takes the write lock, it confirms that the stored capsule at `sequence - 1` has the hash the new capsule names, and raises `ChainHeadMovedError` without writing when it does not. `CapsuleChain.seal_and_store` uses it whenever the store's class defines it, and retries the error the way it retries a sequence collision. Plain `store()` still writes a chain as given, so restores and verification tests can store broken links on purpose.
+
+---
+
 ## [1.5.5] - 2026-11-03
 
 ### Added

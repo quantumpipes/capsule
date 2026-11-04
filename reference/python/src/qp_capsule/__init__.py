@@ -36,7 +36,7 @@ Cross-language SDKs: Python, TypeScript, Go, Rust
 Spec: https://github.com/quantumpipes/capsule
 """
 
-__version__ = "1.5.5"
+__version__ = "1.5.6"
 __author__ = "Quantum Pipes Technologies, LLC"
 __license__ = "Apache-2.0"
 
@@ -63,6 +63,7 @@ from qp_capsule.exceptions import (
     CapsuleError,
     ChainConflictError,
     ChainError,
+    ChainHeadMovedError,
     KeyringError,
     SealError,
     StorageError,
@@ -124,6 +125,7 @@ __all__ = [
     "SealError",
     "ChainError",
     "ChainConflictError",
+    "ChainHeadMovedError",
     "StorageError",
     "KeyringError",
     # High-Level API

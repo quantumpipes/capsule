@@ -35,7 +35,7 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from qp_capsule.capsule import Capsule, CapsuleType, attach_stored_document
-from qp_capsule.exceptions import StorageError
+from qp_capsule.exceptions import ChainHeadMovedError, StorageError
 from qp_capsule.paths import default_db_path
 
 
@@ -172,6 +172,23 @@ class CapsuleStorage:
         Raises:
             StorageError: If Capsule is not sealed or storage fails
         """
+        return await self._store(capsule, linked=False)
+
+    async def store_linked(self, capsule: Capsule) -> Capsule:
+        """Store a capsule only if it links to the stored capsule before it.
+
+        For writers appending to the chain. ``store`` keeps accepting any sealed
+        capsule, because restores and tests write chains as they are, gaps included.
+
+        Raises:
+            ChainHeadMovedError: The capsule's ``previous_hash`` is not the stored
+                capsule at ``sequence - 1``. Nothing is written.
+            StorageError: If Capsule is not sealed or storage fails.
+        """
+        return await self._store(capsule, linked=True)
+
+    async def _store(self, capsule: Capsule, *, linked: bool) -> Capsule:
+        """Write one capsule, checking its link first when ``linked``."""
         if not capsule.is_sealed():
             raise StorageError("Cannot store unsealed Capsule")
 
@@ -193,10 +210,46 @@ class CapsuleStorage:
         )
 
         async with session_factory() as session:
-            session.add(model)
-            await session.commit()
+            try:
+                session.add(model)
+                # The INSERT takes this connection's write lock, so no other writer can
+                # commit until this one ends, and the check below holds through commit.
+                await session.flush()
+                if linked:
+                    await self._check_previous(session, capsule)
+                await session.commit()
+            except BaseException:
+                # A failed COMMIT ("database is locked") leaves the DBAPI connection
+                # inside its write transaction. Returned to the pool, the next reader
+                # borrowed it and saw this unsaved capsule as the chain head, and the
+                # next capsule linked to it: a gap no backup could fill (2026-10-29,
+                # 2026-11-04). Invalidate it, so the transaction dies with it.
+                await session.invalidate()
+                raise
 
         return capsule
+
+    @staticmethod
+    async def _check_previous(session: AsyncSession, capsule: Capsule) -> None:
+        """Refuse a capsule whose ``previous_hash`` is not the stored capsule before it.
+
+        Raises:
+            ChainHeadMovedError: The capsule at ``sequence - 1`` is missing or has
+                another hash, or a first capsule names a previous one.
+        """
+        if capsule.sequence == 0:
+            if capsule.previous_hash is not None:
+                raise ChainHeadMovedError("capsule 0 names a previous hash")
+            return
+        result = await session.execute(
+            select(CapsuleModel.hash).where(CapsuleModel.sequence == capsule.sequence - 1)
+        )
+        stored = result.scalar_one_or_none()
+        if stored is None or stored != capsule.previous_hash:
+            raise ChainHeadMovedError(
+                f"capsule {capsule.sequence} names a previous hash that is not the stored "
+                f"capsule {capsule.sequence - 1}"
+            )
 
     async def get(self, capsule_id: UUID | str, tenant_id: str | None = None) -> Capsule | None:
         """

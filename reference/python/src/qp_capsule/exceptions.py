@@ -29,5 +29,15 @@ class StorageError(CapsuleError):
     """Capsule storage operation failed."""
 
 
+class ChainHeadMovedError(StorageError):
+    """The capsule names a previous hash that is not the stored capsule before it.
+
+    Raised by ``store`` before it commits, so nothing is written. A writer whose head
+    went stale, or was read from a connection still holding someone's failed write,
+    would otherwise link to a capsule the chain never kept. The chain retries it the
+    way it retries a sequence another writer took.
+    """
+
+
 class KeyringError(CapsuleError):
     """Keyring operation failed (load, save, rotate, lookup)."""

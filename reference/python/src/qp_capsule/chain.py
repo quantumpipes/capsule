@@ -332,6 +332,11 @@ class CapsuleChain:
             capsule = seal_instance.seal(capsule)
 
             try:
+                # A store that can check the link does, so a stale head is retried
+                # rather than stored as a gap.
+                # Looked up on the class, so only a store that defines it is asked.
+                if tenant_id is None and hasattr(type(self.storage), "store_linked"):
+                    return await self.storage.store_linked(capsule)  # type: ignore[attr-defined,no-any-return]
                 return await self.storage.store(capsule, tenant_id=tenant_id)
             except Exception as exc:
                 if not _is_integrity_error(exc):
@@ -358,8 +363,10 @@ class CapsuleChain:
 
 def _is_integrity_error(exc: BaseException) -> bool:
     """Check if an exception is a database integrity/unique-constraint violation."""
-    from qp_capsule.exceptions import StorageError
+    from qp_capsule.exceptions import ChainHeadMovedError, StorageError
 
+    if isinstance(exc, ChainHeadMovedError):
+        return True
     name = type(exc).__name__
     if name in ("IntegrityError", "UniqueViolationError"):
         return True
