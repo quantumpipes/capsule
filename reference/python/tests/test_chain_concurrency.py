@@ -542,7 +542,7 @@ class TestCLIVersionHelper:
         from qp_capsule.cli import _get_version
 
         version = _get_version()
-        assert version == "1.5.4"
+        assert version == "1.5.5"
 
     def test_matches_package_version(self):
         import qp_capsule
