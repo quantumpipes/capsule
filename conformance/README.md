@@ -27,6 +27,10 @@ For every fixture:
 
 If all 16 pass, your implementation is conformant.
 
+### ML-DSA-65 signatures (optional, CPS 3.3)
+
+`pq-signature-fixtures.json` holds one ML-DSA-65 public key and seven cases. Each case is a 64-character hash string and a hex `signature_pq` over its UTF-8 bytes, with an empty context. Verify every case with the public key: accept each case marked `valid` and reject the rest. The invalid cases cover a signature for another hash, a flipped bit, a non-empty context, a truncated signature, and non-hex input. `generate_pq_fixtures.py` regenerates the file with liboqs-python. ML-DSA signing is hedged, so a new run writes different signatures that are equally valid.
+
 ---
 
 ## Fixtures

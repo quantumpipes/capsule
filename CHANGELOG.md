@@ -11,7 +11,9 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- **Rust reference implementation** in `reference/rust/` (crate `quantumpipes`). It passes all 16 golden vectors through `canonicalize()` and through the Capsule model, with a CI job on Linux, Windows and macOS (`.github/workflows/rust-ci.yaml`). It writes `spec_version` as hashed content; before this, the Rust model left it out and hashed 0 of 16 fixtures correctly. ML-DSA-65 and stored-document verification are not implemented yet.
+- **Rust reference implementation** in `reference/rust/` (crate `quantumpipes`). It passes all 16 golden vectors through `canonicalize()` and through the Capsule model, with a CI job on Linux, Windows and macOS (`.github/workflows/rust-ci.yaml`). It writes `spec_version` as hashed content; before this, the Rust model left it out and hashed 0 of 16 fixtures correctly. Stored-document verification is not implemented yet.
+- **ML-DSA-65 hybrid signing in Rust (CPS 3.3).** `seal_hybrid` writes `signature_pq` beside the Ed25519 signature, over the same hash string, with an empty context. `verify_hybrid` is fail-closed and needs both signatures, like Python's `require_pq=True`. Keys load and save in the raw FIPS 204 encoding that Python's `key.ml` and `key.ml.pub` hold. `verify`, `verify_hybrid` and `pq_verify` are `#[must_use]`, malformed signatures return `Ok(false)` rather than an error, and private-key bytes are wiped on drop. The crate uses `fips204` 0.4.6, which is not FIPS-validated.
+- **ML-DSA-65 conformance vectors.** `conformance/pq-signature-fixtures.json` has 2 valid and 5 invalid cases signed with liboqs, plus its generator. Rust passes all 7. The reverse direction has no committed guard yet: on 2026-11-03 it was checked once by hand, when liboqs-python 0.16.0.1 (liboqs 0.15.0) verified a Rust-sealed signature and a signature Rust made with a liboqs-exported private key.
 - **Rust CI is reproducible.** It pins toolchain 1.94.1 and runs `--locked` against the committed `reference/rust/Cargo.lock`.
 
 ### Documented

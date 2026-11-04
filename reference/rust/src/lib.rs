@@ -6,7 +6,8 @@
 //!
 //! Create, seal, and verify Capsules: the atomic record of every AI action.
 //! Each Capsule has six sections (Trigger, Context, Reasoning, Authority,
-//! Execution, Outcome) and is cryptographically sealed with SHA3-256 + Ed25519.
+//! Execution, Outcome) and is cryptographically sealed with SHA3-256 + Ed25519,
+//! optionally joined by ML-DSA-65 (FIPS 204) with [`seal_hybrid`].
 //!
 //! ## Quick Start
 //!
@@ -37,5 +38,9 @@ pub mod chain;
 
 pub use capsule::*;
 pub use canonical::canonicalize;
-pub use seal::{compute_hash, seal, verify, generate_signing_key};
+pub use seal::{
+    compute_hash, generate_pq_keypair, generate_signing_key, pq_sign, pq_signing_key_from_bytes,
+    pq_signing_key_to_bytes, pq_verify, pq_verifying_key_from_bytes, pq_verifying_key_to_bytes, seal, seal_hybrid, verify, verify_hybrid, PqSigningKey,
+    PqVerifyingKey, PQ_SIGNATURE_LEN,
+};
 pub use chain::{verify_chain, ChainVerificationResult};

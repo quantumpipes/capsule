@@ -5,7 +5,7 @@ edition = "2021"
 license = "Apache-2.0"
 description = "Tamper-evident audit records: create, seal, and verify Capsules (CPS 1.0)"
 repository = "https://github.com/quantumpipes/capsule"
-keywords = ["ai", "audit", "capsule", "cryptography", "ed25519"]
+keywords = ["audit", "capsule", "cryptography", "ed25519", "ml-dsa"]
 categories = ["cryptography", "data-structures"]
 
 [dependencies]
@@ -13,8 +13,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha3 = "0.10"
 ed25519-dalek = { version = "2", features = ["rand_core"] }
+fips204 = { version = "0.4", default-features = false, features = ["default-rng", "ml-dsa-65"] }
 rand = "0.8"
 hex = "0.4"
+zeroize = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 

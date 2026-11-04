@@ -18,7 +18,7 @@ Reference implementations of the [Capsule Protocol Specification (CPS)](../spec/
 | Chain verification | :white_check_mark: | :white_check_mark: | Links only (sequence, `previous_hash`) |
 | Storage (SQLite) | :white_check_mark: | — | — |
 | Storage (PostgreSQL) | :white_check_mark: | — | — |
-| ML-DSA-65 (post-quantum) | :white_check_mark: Optional | — | Planned |
+| ML-DSA-65 (post-quantum) | :white_check_mark: Optional | — | :white_check_mark: Optional (7/7 PQ vectors) |
 | **Conformance (16/16)** | **:white_check_mark: 16/16** | **:white_check_mark: 16/16** | **:white_check_mark: 16/16** |
 
 :white_check_mark: = Implemented and passing conformance
