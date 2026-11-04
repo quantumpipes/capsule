@@ -1,7 +1,9 @@
 //! Canonical JSON serialization for Capsules.
 //!
-//! Produces byte-identical output to Python's:
-//!   json.dumps(capsule.to_dict(), sort_keys=True, separators=(",", ":"))
+//! Matches Python's json.dumps(capsule.to_dict(), sort_keys=True, separators=(",", ":"))
+//! byte for byte on all 16 CPS golden vectors. Floats small or large enough for
+//! Python to write in exponent form (below 1e-4, or 1e16 and above) are not yet
+//! specified by CPS, and each reference writes them differently.
 //!
 //! This is THE critical function for cross-language compatibility.
 

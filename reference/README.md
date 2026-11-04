@@ -15,7 +15,7 @@ Reference implementations of the [Capsule Protocol Specification (CPS)](../spec/
 | `compute_hash()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | `seal()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | `verify()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| Chain verification | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Chain verification | :white_check_mark: | :white_check_mark: | Links only (sequence, `previous_hash`) |
 | Storage (SQLite) | :white_check_mark: | — | — |
 | Storage (PostgreSQL) | :white_check_mark: | — | — |
 | ML-DSA-65 (post-quantum) | :white_check_mark: Optional | — | Planned |
@@ -26,7 +26,7 @@ Reference implementations of the [Capsule Protocol Specification (CPS)](../spec/
 
 ### Other Languages
 
-Go ships as a separate repo, [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) (planned). Rust lives here in [`rust/`](./rust/), so it is checked against these exact fixtures in the same CI as Python and TypeScript.
+Go ships as a separate repo, [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go). Rust lives here in [`rust/`](./rust/), so its CI reads these exact fixtures from the same repository.
 
 New language implementations import `conformance/fixtures.json` from this repo and pass all 16 golden vectors independently.
 

@@ -34,6 +34,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - run: rustup toolchain install stable --profile minimal --component clippy
-      - run: cargo clippy --release --all-targets -- -D warnings
-      - run: cargo test --release
+      # Pinned so a new stable lint cannot turn CI red with no code change.
+      - run: rustup toolchain install 1.94.1 --profile minimal --component clippy && rustup default 1.94.1
+      # Cargo.lock is committed and --locked refuses any resolution it does not record.
+      - run: cargo clippy --release --locked --all-targets -- -D warnings
+      - run: cargo test --release --locked

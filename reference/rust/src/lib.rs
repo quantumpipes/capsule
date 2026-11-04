@@ -26,8 +26,8 @@
 //!
 //! ## Cross-Language Compatibility
 //!
-//! Capsules sealed in Rust can be verified in Python, TypeScript, or Go,
-//! and vice versa. All implementations follow the Capsule Protocol Specification
+//! Capsules sealed in Rust verify in Python, TypeScript, and Go. Rust verifies
+//! CPS 1.0 capsules that carry `spec_version`. All implementations follow the Capsule Protocol Specification
 //! for byte-identical JSON serialization.
 
 pub mod capsule;

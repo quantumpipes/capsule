@@ -9,12 +9,11 @@ use sha3::{Digest, Sha3_256};
 use std::path::PathBuf;
 
 fn fixtures() -> serde_json::Value {
-    let here = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let candidates = [
-        here.join("../../conformance/fixtures.json"),             // this repo: reference/rust
-        here.join("../../repos/capsule/conformance/fixtures.json"), // a monorepo that vendors this repo under repos/capsule
-    ];
-    let path = candidates.iter().find(|p| p.is_file()).expect("conformance/fixtures.json not found");
+    // CAPSULE_FIXTURES overrides the path for a copy of this crate built outside the repo.
+    let path = std::env::var_os("CAPSULE_FIXTURES")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../conformance/fixtures.json"));
+    assert!(path.is_file(), "fixtures not found at {}; set CAPSULE_FIXTURES", path.display());
     serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap()
 }
 

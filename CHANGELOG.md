@@ -12,6 +12,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - **Rust reference implementation** in `reference/rust/` (crate `quantumpipes`). It passes all 16 golden vectors through `canonicalize()` and through the Capsule model, with a CI job on Linux, Windows and macOS (`.github/workflows/rust-ci.yaml`). It writes `spec_version` as hashed content; before this, the Rust model left it out and hashed 0 of 16 fixtures correctly. ML-DSA-65 and stored-document verification are not implemented yet.
+- **Rust CI is reproducible.** It pins toolchain 1.94.1 and runs `--locked` against the committed `reference/rust/Cargo.lock`.
+
+### Documented
+
+- **Floats in exponent range are not yet specified.** CPS defines float-typed fields but not exponent form. For 1e-5, Python writes `1e-05` while TypeScript and Rust write `0.00001`, so a capsule holding such a value hashes differently across references. The Rust README says so, and every fixture avoids that range.
+- **Status pages match the code.** `docs/security.md` lists the cross-language references that exist, the ecosystem diagram in `docs/architecture.md` shows the Rust reference, and the reference table marks Rust chain verification as links only.
 
 ### Fixed
 

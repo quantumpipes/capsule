@@ -479,8 +479,12 @@ The Capsule Protocol is implemented across languages and frameworks. The specifi
 │   store + CLI        │   SHA3 + Ed25519     │   prompt hash, tokens │
 │                      │   chain verification │   sync + async        │
 │ TypeScript           │                      │                       │
-│   create + seal      │ Rust (planned)       │                       │
+│   create + seal      │                      │                       │
 │   verify + chain     │                      │                       │
+│                      │                      │                       │
+│ Rust (quantumpipes)  │                      │                       │
+│   create + seal      │                      │                       │
+│   verify, links      │                      │                       │
 └──────────────────────┴──────────────────────┴───────────────────────┘
 ```
 
