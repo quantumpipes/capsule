@@ -6,32 +6,27 @@ Reference implementations of the [Capsule Protocol Specification (CPS)](../spec/
 
 ## Implementation Status
 
-| Capability | [Python](./python/) | [TypeScript](./typescript/) |
-|---|:---:|:---:|
-| Capsule data model | :white_check_mark: | :white_check_mark: |
-| `to_dict()` / `toDict()` | :white_check_mark: | :white_check_mark: |
-| `from_dict()` / `fromDict()` | :white_check_mark: | :white_check_mark: |
-| `canonicalize()` | :white_check_mark: | :white_check_mark: |
-| `compute_hash()` | :white_check_mark: | :white_check_mark: |
-| `seal()` | :white_check_mark: | :white_check_mark: |
-| `verify()` | :white_check_mark: | :white_check_mark: |
-| Chain verification | :white_check_mark: | :white_check_mark: |
-| Storage (SQLite) | :white_check_mark: | — |
-| Storage (PostgreSQL) | :white_check_mark: | — |
-| ML-DSA-65 (post-quantum) | :white_check_mark: Optional | — |
-| **Conformance (16/16)** | **:white_check_mark: 16/16** | **:white_check_mark: 16/16** |
+| Capability | [Python](./python/) | [TypeScript](./typescript/) | [Rust](./rust/) |
+|---|:---:|:---:|:---:|
+| Capsule data model | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `to_dict()` / `toDict()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `from_dict()` / `fromDict()` | :white_check_mark: | :white_check_mark: | :white_check_mark: (serde) |
+| `canonicalize()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `compute_hash()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `seal()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| `verify()` | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Chain verification | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Storage (SQLite) | :white_check_mark: | — | — |
+| Storage (PostgreSQL) | :white_check_mark: | — | — |
+| ML-DSA-65 (post-quantum) | :white_check_mark: Optional | — | Planned |
+| **Conformance (16/16)** | **:white_check_mark: 16/16** | **:white_check_mark: 16/16** | **:white_check_mark: 16/16** |
 
 :white_check_mark: = Implemented and passing conformance
 — = Not applicable (storage and PQ are implementation-specific features)
 
 ### Other Languages
 
-Go and Rust implementations ship as **separate repos**, not inside this repository. Two reference implementations (Python + TypeScript) is intentional — enough to prove cross-language interoperability without turning the protocol repo into a polyglot monorepo.
-
-| Language | Repo | Status |
-|---|---|---|
-| Go | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) | Planned |
-| Rust | [quantumpipes/capsule-rust](https://github.com/quantumpipes/capsule-rust) | Planned |
+Go ships as a separate repo, [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) (planned). Rust lives here in [`rust/`](./rust/), so it is checked against these exact fixtures in the same CI as Python and TypeScript.
 
 New language implementations import `conformance/fixtures.json` from this repo and pass all 16 golden vectors independently.
 

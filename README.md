@@ -224,7 +224,7 @@ These extend the protocol to new languages and frameworks.
 |---|---|---|---|
 | **[capsule-go](https://github.com/quantumpipes/capsule-go)** | Verify Capsules in Go | `go get github.com/quantumpipes/capsule-go` | [quantumpipes/capsule-go](https://github.com/quantumpipes/capsule-go) |
 | **[capsule-litellm](https://github.com/quantumpipes/capsule-litellm)** | Automatic audit trail for LiteLLM | `pip install capsule-litellm` | [quantumpipes/capsule-litellm](https://github.com/quantumpipes/capsule-litellm) |
-| capsule-rust | Verify Capsules in Rust | — | Planned |
+| [reference/rust](./reference/rust/) | Create, seal, and verify Capsules in Rust | `quantumpipes` (git) | 16/16 conformance |
 
 All implementations must pass the [conformance suite](./conformance/). The specification is the source of truth.
 
