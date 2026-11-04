@@ -31,8 +31,12 @@ def _capsule(note: str) -> Capsule:
 
 @pytest.fixture
 async def pooled(tmp_path: Path):
-    """Storage with the default pool and a short lock wait, so a lock fails fast."""
-    storage = CapsuleStorage(db_path=tmp_path / "c.db", connect_args={"timeout": 0.2})
+    """Storage with the default pool and a short lock wait, so a lock fails fast.
+
+    Under the rollback journal, the mode the desktop chain ran in when it lost
+    capsules, and still the mode a file keeps when the switch to WAL is skipped.
+    """
+    storage = CapsuleStorage(db_path=tmp_path / "c.db", wal=False, connect_args={"timeout": 0.2})
     yield storage
     await storage.close()
 
@@ -135,3 +139,49 @@ async def test_a_head_that_runs_ahead_of_the_store_is_retried(
     assert stored.sequence == 2, "retried on the real head"
     assert [r[0] for r in _rows(pooled.db_path)] == [0, 1, 2]
     assert (await chain.verify(seal=temp_seal)).valid
+
+
+# --- WAL: a reader no longer costs a capsule --------------------------------------------
+
+
+@pytest.fixture
+async def wal_store(tmp_path: Path):
+    storage = CapsuleStorage(db_path=tmp_path / "w.db", connect_args={"timeout": 0.2})
+    yield storage
+    await storage.close()
+
+
+async def test_the_store_puts_its_file_in_wal_mode(
+    wal_store: CapsuleStorage, temp_seal: Seal
+) -> None:
+    await CapsuleChain(wal_store).seal_and_store(_capsule("one"), seal=temp_seal)
+    with closing(sqlite3.connect(wal_store.db_path)) as conn:
+        assert conn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
+
+
+async def test_a_reader_mid_transaction_no_longer_blocks_a_commit(
+    wal_store: CapsuleStorage, temp_seal: Seal
+) -> None:
+    """The 331 lost capsules: under the rollback journal this commit fails."""
+    chain = CapsuleChain(wal_store)
+    await chain.seal_and_store(_capsule("before"), seal=temp_seal)
+    reader = sqlite3.connect(wal_store.db_path, timeout=0.1, isolation_level=None)
+    reader.execute("BEGIN")
+    reader.execute("SELECT count(*) FROM capsules").fetchone()
+    try:
+        stored = await chain.seal_and_store(_capsule("during a read"), seal=temp_seal)
+    finally:
+        reader.execute("COMMIT")
+        reader.close()
+    assert stored.sequence == 1
+    assert [r[0] for r in _rows(wal_store.db_path)] == [0, 1]
+
+
+def test_the_busy_timeout_defaults_longer_than_pysqlite(tmp_path: Path) -> None:
+    from qp_capsule.storage import BUSY_TIMEOUT_S
+
+    default = CapsuleStorage(db_path=tmp_path / "a.db")
+    chosen = CapsuleStorage(db_path=tmp_path / "b.db", connect_args={"timeout": 1})
+    assert BUSY_TIMEOUT_S > 5
+    assert default._engine_kwargs["connect_args"]["timeout"] == BUSY_TIMEOUT_S
+    assert chosen._engine_kwargs["connect_args"]["timeout"] == 1

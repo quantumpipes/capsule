@@ -20,12 +20,14 @@ Features:
 from __future__ import annotations
 
 import json
+import logging
+import sqlite3
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Integer, String, Text, UniqueConstraint, desc, func, select
+from sqlalchemy import Integer, String, Text, UniqueConstraint, desc, event, func, select
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -43,6 +45,32 @@ class Base(DeclarativeBase):
     """SQLAlchemy declarative base."""
 
     pass
+
+
+_log = logging.getLogger(__name__)
+
+#: How long a write waits for another writer's lock before failing, in seconds.
+#: pysqlite's default is 5. A failed write is a capsule never recorded, so wait longer.
+BUSY_TIMEOUT_S = 15.0
+
+
+def _use_wal(dbapi_connection: Any, _record: Any) -> None:
+    """Put each new connection's file in WAL mode.
+
+    Switching needs a moment with no other connection mid-transaction. If one is,
+    the switch is skipped and the next connection tries again; the file still works
+    under its current journal.
+    """
+    cursor = dbapi_connection.cursor()
+    try:
+        cursor.execute("PRAGMA journal_mode=WAL")
+        mode = cursor.fetchone()
+        if mode and str(mode[0]).lower() != "wal":
+            _log.warning("capsule store stayed in %s journal mode", mode[0])
+    except sqlite3.OperationalError as exc:
+        _log.warning("capsule store could not switch to WAL yet: %s", exc)
+    finally:
+        cursor.close()
 
 
 class CapsuleModel(Base):
@@ -84,16 +112,28 @@ class CapsuleStorage:
         capsules = await storage.list(limit=10)
     """
 
-    def __init__(self, db_path: Path | None = None, **engine_kwargs: Any):
+    def __init__(self, db_path: Path | None = None, *, wal: bool = True, **engine_kwargs: Any):
         """
         Initialize storage.
 
         Args:
             db_path: Path to SQLite database file.
                      Defaults to $QUANTUMPIPES_DATA_DIR/capsules.db or ~/.quantumpipes/capsules.db
+            wal: Put the file in write-ahead-log mode (the default). Under the
+                rollback journal a reader blocks every commit, and a commit that
+                waits out the busy timeout is a capsule that is never recorded: the
+                desktop sidecar logged 331 such losses in one log file
+                (2026-11-04). In WAL, readers and the writer no longer block each
+                other. The mode is a property of the file, so it persists.
             **engine_kwargs: Forwarded to ``create_async_engine`` (e.g. ``poolclass``).
+                ``connect_args["timeout"]`` (the busy timeout, in seconds) defaults
+                to ``BUSY_TIMEOUT_S``.
         """
         self.db_path = db_path or default_db_path()
+        self._wal = wal
+        connect_args = dict(engine_kwargs.pop("connect_args", None) or {})
+        connect_args.setdefault("timeout", BUSY_TIMEOUT_S)
+        engine_kwargs["connect_args"] = connect_args
         self._engine_kwargs = engine_kwargs
         self._engine: AsyncEngine | None = None
         self._session_factory: async_sessionmaker[AsyncSession] | None = None
@@ -137,6 +177,10 @@ class CapsuleStorage:
             echo=False,
             **self._engine_kwargs,
         )
+
+        sync_engine = getattr(engine, "sync_engine", None)
+        if self._wal and sync_engine is not None:
+            event.listen(sync_engine, "connect", _use_wal)
 
         try:
             async with engine.begin() as conn:

@@ -11,6 +11,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.7] - 2026-11-04
+
+### Fixed
+
+- **A reader no longer costs a capsule.** `CapsuleStorage` now puts its file in WAL mode. Under the rollback journal, a reader inside a transaction blocks every commit, and a commit that waits out the busy timeout is a capsule that is never recorded. The AskQP desktop sidecar logged 331 such losses in one log file. In WAL, readers and the writer no longer block each other. The mode is a property of the file, so it persists, and `wal=False` keeps the old journal. If another connection is mid-transaction, the switch is skipped with a warning and retried on the next connection.
+- **Writers wait longer for a lock.** The busy timeout now defaults to `BUSY_TIMEOUT_S` (15 s) instead of pysqlite's 5 s. Pass `connect_args={"timeout": ...}` to choose another.
+- **The version tests track the release.** `test_cli.py` and `test_chain_concurrency.py` still pinned 1.5.5 after the 1.5.6 bump.
+
+---
+
 ## [1.5.6] - 2026-11-04
 
 ### Fixed
