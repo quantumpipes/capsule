@@ -182,6 +182,10 @@ class Capsules:
 
         self._seal = Seal()
         self._chain = CapsuleChain(self._storage)
+        # Writes a sync function scheduled on a running loop. The loop holds only
+        # a weak reference to a task, so an unreferenced one can be collected
+        # before it stores its capsule; holding it here also lets close() wait.
+        self._pending: set[asyncio.Task[Any]] = set()
 
     @property
     def storage(self) -> CapsuleStorageProtocol:
@@ -215,7 +219,9 @@ class Capsules:
         return capsule
 
     async def close(self) -> None:
-        """Release storage backend resources."""
+        """Wait for scheduled capsule writes, then release storage resources."""
+        if self._pending:
+            await asyncio.gather(*self._pending, return_exceptions=True)
         await self._storage.close()
 
     def audit(
@@ -367,7 +373,9 @@ class Capsules:
                                 loop = None
 
                             if loop is not None and loop.is_running():
-                                loop.create_task(_coro)
+                                task = loop.create_task(_coro)
+                                self._pending.add(task)
+                                task.add_done_callback(self._pending.discard)
                             else:
                                 asyncio.run(_coro)
                         except Exception as seal_err:

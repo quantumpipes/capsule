@@ -9,6 +9,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A sync function's capsule is no longer lost to garbage collection or an early close.** On a running loop, `@capsules.audit()` on a sync function schedules the write with `create_task` and kept no reference to the task. The loop holds tasks only weakly, so one could be collected before it stored its capsule. `Capsules` now holds each scheduled write until it finishes, and `close()` waits for them before it releases storage. Closing right after a sync call used to drop that call's capsule.
+- **The sync decorator test waits for the write, not for 50 ms.** On a slow runner the first store, which creates the file, took longer. The test then found no capsule, and the leftover write warned inside `TestTiming`. It failed Python 3.12 CI twice on 2026-11-05, once on the 1.5.9 release run.
+
 ---
 
 ## [1.5.9] - 2026-11-05

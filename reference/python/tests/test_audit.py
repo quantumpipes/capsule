@@ -353,8 +353,12 @@ class TestSyncSupport:
         result = my_sync_task(21)
         assert result == 42
 
-        # Sync functions with a running loop use create_task; give it time
-        await asyncio.sleep(0.05)
+        # Sync functions with a running loop schedule the write as a task.
+        # Wait for that task, never for a fixed time: a first store creates
+        # the file, and a slow runner took longer than the 50 ms this slept.
+        assert len(capsules._pending) == 1
+        await asyncio.wait_for(asyncio.gather(*capsules._pending), timeout=10)
+        assert not capsules._pending, "a finished write is released"
 
         stored = await capsules.storage.list()
         assert len(stored) >= 1
@@ -397,6 +401,25 @@ print("SYNC_NO_LOOP_OK")
         assert "SYNC_NO_LOOP_OK" in proc.stdout, (
             f"stdout: {proc.stdout}\nstderr: {proc.stderr}"
         )
+
+
+    async def test_close_waits_for_a_scheduled_write(self, tmp_path: Path) -> None:
+        """RED PROOF: closing right after a sync call used to drop its capsule."""
+        db = tmp_path / "test.db"
+        capsules = Capsules(str(db))
+
+        @capsules.audit(type="tool")
+        def my_sync_task(value: int) -> int:
+            return value * 2
+
+        my_sync_task(1)
+        await capsules.close()
+
+        reopened = Capsules(str(db))
+        try:
+            assert await reopened.storage.count() == 1
+        finally:
+            await reopened.close()
 
 
 # ---------------------------------------------------------------------------
