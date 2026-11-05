@@ -7,12 +7,16 @@ on:
       - "reference/typescript/**"
       - "conformance/**"
       - "spec/**"
+      - ".github/workflows/typescript-ci.yaml"
+      - ".github/workflows/typescript-release.yaml"
   pull_request:
     branches: [main]
     paths:
       - "reference/typescript/**"
       - "conformance/**"
       - "spec/**"
+      - ".github/workflows/typescript-ci.yaml"
+      - ".github/workflows/typescript-release.yaml"
 
 permissions:
   contents: read

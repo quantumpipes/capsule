@@ -10,6 +10,8 @@ on:
       - "docs/**"
       - "examples/**"
       - "*.md"
+      - ".github/workflows/python-ci.yaml"
+      - ".github/workflows/python-release.yaml"
   pull_request:
     branches: [main]
     paths:
@@ -19,6 +21,8 @@ on:
       - "docs/**"
       - "examples/**"
       - "*.md"
+      - ".github/workflows/python-ci.yaml"
+      - ".github/workflows/python-release.yaml"
 
 permissions:
   contents: read
