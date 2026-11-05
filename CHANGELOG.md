@@ -11,6 +11,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.8] - 2026-11-05
+
+### Fixed
+
+- **Two stores opening a brand-new file at once both start.** `create_all` checks for each table, then creates the missing ones. Two `CapsuleStorage` objects on a new file both found no table, both ran CREATE, and the loser raised `table capsules already exists`. A first launch where two processes open the store together hit it. That error now re-runs `create_all`, up to `SCHEMA_ATTEMPTS` (3) times, and the re-check finds the winner's schema. Any other schema error still raises at once. Found by the AskQP core end-to-end tests.
+
+---
+
 ## [1.5.7] - 2026-11-04
 
 ### Fixed

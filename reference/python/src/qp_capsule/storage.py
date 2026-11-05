@@ -28,6 +28,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Integer, String, Text, UniqueConstraint, desc, event, func, select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -52,6 +53,21 @@ _log = logging.getLogger(__name__)
 #: How long a write waits for another writer's lock before failing, in seconds.
 #: pysqlite's default is 5. A failed write is a capsule never recorded, so wait longer.
 BUSY_TIMEOUT_S = 15.0
+
+#: How many times schema creation is retried when another connection created part
+#: of the schema between the existence check and the CREATE. Each retry re-checks,
+#: so the second attempt finds the tables and indexes the winner made.
+SCHEMA_ATTEMPTS = 3
+
+
+def _created_concurrently(exc: OperationalError) -> bool:
+    """Whether ``exc`` is SQLite reporting a table or index another connection made.
+
+    ``create_all`` checks for each table, then creates the missing ones. Two stores
+    opening a brand-new file at once both see no table, both CREATE, and the loser
+    raises ``table capsules already exists``.
+    """
+    return "already exists" in str(exc.orig)
 
 
 def _use_wal(dbapi_connection: Any, _record: Any) -> None:
@@ -163,6 +179,11 @@ class CapsuleStorage:
         audit trail went silently dead. It is now self-healing: on failure both
         attributes stay unset and the next call retries from scratch.
 
+        Two stores that open a brand-new file at once both find no table and both
+        CREATE it, and the loser used to raise ``table capsules already exists``.
+        That error now re-runs ``create_all``, whose existence check then sees the
+        winner's schema (found by the AskQP core end-to-end tests, 2026-11-05).
+
         Raises:
             Exception: Whatever the underlying engine/schema creation raised. The
                 partially built engine is disposed first, so nothing is retained.
@@ -183,8 +204,15 @@ class CapsuleStorage:
             event.listen(sync_engine, "connect", _use_wal)
 
         try:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
+            for attempt in range(SCHEMA_ATTEMPTS):
+                try:
+                    async with engine.begin() as conn:
+                        await conn.run_sync(Base.metadata.create_all)
+                    break
+                except OperationalError as exc:
+                    if not _created_concurrently(exc) or attempt == SCHEMA_ATTEMPTS - 1:
+                        raise
+                    _log.debug("capsule schema created concurrently; re-checking")
         except Exception:
             await engine.dispose()
             raise
