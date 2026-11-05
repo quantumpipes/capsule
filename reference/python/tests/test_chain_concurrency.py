@@ -145,8 +145,25 @@ class TestSealAndStoreRetry:
         assert mock_storage.get_latest.call_count == 2
 
     @pytest.mark.asyncio
-    async def test_raises_after_max_retries(self, temp_seal):
-        """Three consecutive conflicts exhaust retries."""
+    async def test_succeeds_after_seven_conflicts(self, temp_seal, monkeypatch):
+        """RED PROOF: at the old budget of 3 this raises. Another process can win
+        the sequence several times running; the eighth attempt still lands."""
+        monkeypatch.setattr("qp_capsule.chain.random.uniform", lambda a, b: 0.0)
+        integrity_err = type("IntegrityError", (Exception,), {})()
+
+        mock_storage = AsyncMock()
+        mock_storage.get_latest = AsyncMock(return_value=None)
+        mock_storage.store = AsyncMock(side_effect=[integrity_err] * 7 + [_make_capsule()])
+
+        chain = CapsuleChain(mock_storage)
+        await chain.seal_and_store(_make_capsule("seven-conflicts"), seal=temp_seal)
+
+        assert mock_storage.store.call_count == 8
+
+    @pytest.mark.asyncio
+    async def test_raises_after_max_retries(self, temp_seal, monkeypatch):
+        """Conflicts on every attempt exhaust the budget and raise."""
+        monkeypatch.setattr("qp_capsule.chain.random.uniform", lambda a, b: 0.0)
         integrity_err = type("IntegrityError", (Exception,), {})()
 
         mock_storage = AsyncMock()
@@ -156,14 +173,15 @@ class TestSealAndStoreRetry:
         chain = CapsuleChain(mock_storage)
         capsule = _make_capsule("always-conflict")
 
-        with pytest.raises(ChainConflictError, match="3 retries"):
+        with pytest.raises(ChainConflictError, match=f"{_MAX_CHAIN_RETRIES} retries"):
             await chain.seal_and_store(capsule, seal=temp_seal)
 
-        assert mock_storage.store.call_count == 3
+        assert mock_storage.store.call_count == _MAX_CHAIN_RETRIES
 
     @pytest.mark.asyncio
-    async def test_conflict_error_includes_tenant(self, temp_seal):
+    async def test_conflict_error_includes_tenant(self, temp_seal, monkeypatch):
         """ChainConflictError message includes the tenant_id."""
+        monkeypatch.setattr("qp_capsule.chain.random.uniform", lambda a, b: 0.0)
         integrity_err = type("IntegrityError", (Exception,), {})()
 
         mock_storage = AsyncMock()
@@ -441,9 +459,9 @@ class TestModelConstraints:
 class TestRetryInvariants:
     """Properties that must hold across all retry scenarios."""
 
-    def test_max_retries_is_three(self):
-        """The retry constant is exactly 3."""
-        assert _MAX_CHAIN_RETRIES == 3
+    def test_max_retries_is_eight(self):
+        """The retry constant is 8: 3 lost writes to a second process."""
+        assert _MAX_CHAIN_RETRIES == 8
 
     @pytest.mark.asyncio
     async def test_capsule_id_preserved_across_retries(self, temp_seal):
@@ -542,7 +560,7 @@ class TestCLIVersionHelper:
         from qp_capsule.cli import _get_version
 
         version = _get_version()
-        assert version == "1.5.8"
+        assert version == "1.5.9"
 
     def test_matches_package_version(self):
         import qp_capsule

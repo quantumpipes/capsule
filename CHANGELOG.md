@@ -11,6 +11,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [1.5.9] - 2026-11-05
+
+### Fixed
+
+- **A write outlasts another process.** `seal_and_store` now makes 8 attempts, up from 3, before it raises `ChainConflictError`. Writers in one process already queue on the chain lock, so only a writer in another process spends a retry. Two OS processes writing 24 capsules each into one file lost 20 of 720 writes at 3 attempts, and 14 of 15 runs lost at least one. At 8 they lost none, and no run left a gap. The jittered waits sum to at most 1.4 s, and only while the other process keeps winning. Found by the AskQP core end-to-end tests, which raised core's own `store_on_chain` budget the same day.
+
 ## [1.5.8] - 2026-11-05
 
 ### Fixed

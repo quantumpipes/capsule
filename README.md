@@ -104,7 +104,7 @@ No consensus mechanism. No distributed ledger. SHA3-256 hashes linking one recor
 Concurrent writes to the same chain are handled automatically by `seal_and_store()`:
 
 1. **UNIQUE constraint** — the database rejects duplicate sequence numbers (`UNIQUE(sequence)` on SQLite, `UNIQUE(tenant_id, sequence)` on PostgreSQL)
-2. **Optimistic retry** — on conflict, `seal_and_store()` re-reads the chain head, recomputes the sequence, re-seals, and retries (up to 3 attempts)
+2. **Optimistic retry** — on conflict, `seal_and_store()` re-reads the chain head, recomputes the sequence, re-seals, and retries (up to 8 attempts; only a writer in another process spends one)
 3. **`ChainConflictError`** — raised if all retries are exhausted under extreme contention
 
 ```python
