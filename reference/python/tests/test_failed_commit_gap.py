@@ -185,3 +185,52 @@ def test_the_busy_timeout_defaults_longer_than_pysqlite(tmp_path: Path) -> None:
     assert BUSY_TIMEOUT_S > 5
     assert default._engine_kwargs["connect_args"]["timeout"] == BUSY_TIMEOUT_S
     assert chosen._engine_kwargs["connect_args"]["timeout"] == 1
+
+
+class _Cursor:
+    """A DB-API cursor whose PRAGMA answers or raises as told."""
+
+    def __init__(self, mode: str | None = None, error: Exception | None = None) -> None:
+        self.mode, self.error, self.closed = mode, error, False
+
+    def execute(self, _sql: str) -> None:
+        if self.error is not None:
+            raise self.error
+
+    def fetchone(self) -> tuple[str] | None:
+        return (self.mode,) if self.mode is not None else None
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _Conn:
+    def __init__(self, cursor: _Cursor) -> None:
+        self._cursor = cursor
+
+    def cursor(self) -> _Cursor:
+        return self._cursor
+
+
+def test_a_file_that_stays_in_another_journal_mode_is_logged(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from qp_capsule.storage import _use_wal
+
+    cursor = _Cursor(mode="delete")
+    with caplog.at_level("WARNING", logger="qp_capsule.storage"):
+        _use_wal(_Conn(cursor), None)
+    assert "stayed in delete journal mode" in caplog.text
+    assert cursor.closed
+
+
+def test_a_skipped_switch_to_wal_is_logged_and_not_raised(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from qp_capsule.storage import _use_wal
+
+    cursor = _Cursor(error=sqlite3.OperationalError("database is locked"))
+    with caplog.at_level("WARNING", logger="qp_capsule.storage"):
+        _use_wal(_Conn(cursor), None)
+    assert "could not switch to WAL yet: database is locked" in caplog.text
+    assert cursor.closed
