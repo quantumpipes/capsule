@@ -9,8 +9,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [1.6.0] - 2026-11-05
+
+The Python implementation adds evidence APIs; the CPS wire format remains 1.0.
+
 ### Fixed
 
+- SQLite writers preserve literal `?`, `#` and `%` in database filenames by
+  passing a structured URL to SQLAlchemy.
+- Version checks compare the serialized CPS marker with the normative specification
+  header, independently of Python package releases.
 - Verification preserves key custody. Missing verification keys return failure;
   verification no longer provisions keys or migrates a legacy keyring. Local
   ML-DSA-65 verification uses the public key alone, and signing refuses to replace
@@ -21,6 +31,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- Optional SQLite `CapsuleStorage.read_record` returns one exact UUID's bounded,
+  immutable content and envelope bytes without initializing the database or
+  parsing JSON. The reader limits active work through running and queued
+  cancellation, distinguishes unavailable storage from absent records, and
+  rejects unsupported runtime or tenant scope. Strict consumers still own
+  parsing, signed identity, producer authentication and current authority.
 - `Seal.verify_with_keys_detailed` verifies both Ed25519 and ML-DSA-65 signatures
   against an explicitly trusted public-key pair, with no custody-file access.
   Applications remain responsible for key trust, producer roles and current authority.

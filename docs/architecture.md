@@ -341,12 +341,45 @@ All storage backends implement `CapsuleStorageProtocol`, a runtime-checkable `ty
 
 ### Built-in Backends
 
-<!-- VERIFIED: reference/python/src/qp_capsule/storage.py:73-84, src/qp_capsule/storage_pg.py:67-79 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage.py:330-373 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage_pg.py:182-218 -->
 
 | Backend | Install | Table | Multi-Tenant | Use Case |
 |---|---|---|---|---|
-| `CapsuleStorage` | `qp-capsule[storage]` | `capsules` | No (`tenant_id` accepted, ignored) | Single-node, production included (WAL) |
-| `PostgresCapsuleStorage` | `qp-capsule[postgres]` | `quantumpipes_capsules` | Yes (`tenant_id` filters all queries) | Multi-tenant server |
+| `CapsuleStorage` | `qp-capsule[storage]` | `capsules` | Legacy methods ignore `tenant_id`; raw reads reject a supplied tenant | Single-node, production included (WAL) |
+| `PostgresCapsuleStorage` | `qp-capsule[postgres]` | `quantumpipes_capsules` | Yes, through explicit tenant filters | Multi-tenant server |
+
+### Bounded raw evidence
+
+SQLite `CapsuleStorage.read_record` supplies an optional `CapsuleRecordReader`
+capability, separate from the existing storage protocol. It accepts a full UUID
+and explicit `tenant_id=None`, then returns immutable content and envelope bytes
+from one read transaction. It bypasses legacy initialization and JSON parsing.
+PostgreSQL and custom backends do not yet implement this capability; strict
+consumers must report unsupported instead of falling back to `get`.
+<!-- VERIFIED: reference/python/src/qp_capsule/records.py:73-117 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage.py:348-373 -->
+
+The default content ceiling is 64 KiB, configurable up to one MiB. Each envelope
+field has its own byte ceiling. SQLite checks types and byte lengths before
+returning values, and an overflow rejects the entire record. Four executor jobs
+may be admitted per process. Caller cancellation or timeout retains a slot until
+the actual job finishes or its queued cancellation is confirmed. Native lock and
+query limits complement the caller timeout; they are not a hard OS deadline.
+<!-- VERIFIED: reference/python/src/qp_capsule/records.py:15-30 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage_read.py:30-125 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage_read.py:129-194 -->
+
+This reader requires SQLite 3.43 or newer, UTF-8 database encoding, and a trusted
+configured path and schema owner. It performs no application data or schema
+writes. SQLite may coordinate through WAL files, and the reader uses live WAL
+state. A missing database returns unavailable; only a missing ID in an available
+store returns `None`. Raw bytes establish neither valid JSON nor authenticity,
+signed scope, producer authority, freshness or permission to act. The consuming
+service must establish each required property before using the evidence.
+<!-- VERIFIED: reference/python/src/qp_capsule/storage_read.py:1-11 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/storage_read.py:48-121 -->
+<!-- VERIFIED: reference/python/tests/test_record_read.py:1-454 -->
 
 ### Custom Backends
 

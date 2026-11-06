@@ -90,16 +90,14 @@ class TestGoldenFixtures:
 class TestVersionAlignment:
     """All version markers must agree across the repo."""
 
-    def test_spec_version_file_matches_changelog(self):
-        """spec/VERSION must match the major.minor of the latest CHANGELOG release."""
-        spec_version = (REPO_ROOT / "spec" / "VERSION").read_text().strip()
-        changelog = (REPO_ROOT / "CHANGELOG.md").read_text()
-        match = re.search(r"\[(\d+)\.(\d+)\.\d+\]", changelog)
-        assert match, "No versioned release found in CHANGELOG"
-        expected = f"{match.group(1)}.{match.group(2)}"
-        assert spec_version == expected, (
-            f"spec/VERSION ({spec_version}) != CHANGELOG ({expected})"
-        )
+    def test_wire_version_matches_normative_specification(self):
+        """A Python library release must preserve the independently versioned CPS format."""
+        from qp_capsule import Capsule
+
+        specification = (REPO_ROOT / "spec" / "README.md").read_text()
+        match = re.search(r"^\*\*Version\*\*:\s*(\d+\.\d+)\s*$", specification, re.MULTILINE)
+        assert match, "No normative CPS version found"
+        assert Capsule().to_dict()["spec_version"] == match.group(1)
 
     def test_python_init_version_matches_pyproject(self):
         """__version__ in __init__.py must match pyproject.toml."""

@@ -28,6 +28,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import Integer, String, Text, UniqueConstraint, desc, event, func, select
+from sqlalchemy.engine import URL
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
@@ -40,6 +41,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from qp_capsule.capsule import Capsule, CapsuleType, attach_stored_document
 from qp_capsule.exceptions import ChainHeadMovedError, StorageError
 from qp_capsule.paths import default_db_path
+from qp_capsule.records import DEFAULT_CONTENT_BYTES, RawCapsuleRecord
 
 
 class Base(DeclarativeBase):
@@ -194,7 +196,7 @@ class CapsuleStorage:
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
 
         engine = create_async_engine(
-            f"sqlite+aiosqlite:///{self.db_path}",
+            URL.create("sqlite+aiosqlite", database=str(self.db_path)),
             echo=False,
             **self._engine_kwargs,
         )
@@ -342,6 +344,33 @@ class CapsuleStorage:
             if result:
                 return self._to_capsule(result)
             return None
+
+    async def read_record(
+        self,
+        capsule_id: UUID,
+        *,
+        tenant_id: str | None,
+        max_content_bytes: int = DEFAULT_CONTENT_BYTES,
+    ) -> RawCapsuleRecord | None:
+        """Read exact bounded evidence without initializing storage or parsing JSON.
+
+        Args:
+            capsule_id: Full UUID; partial and string identifiers are rejected.
+            tenant_id: Must be None because this SQLite store has no tenant column.
+            max_content_bytes: Trusted caller's maximum content size in bytes.
+        Returns:
+            Owned raw bytes, or None for a missing record in an available store.
+        Raises:
+            RecordReadError: Invalid input, unavailable storage or a bounded-read error.
+
+        SQLite WAL coordination may affect sidecar files. The reader performs no
+        application data/schema writes; signed scope and authority are caller checks.
+        """
+        from qp_capsule.storage_read import read_sqlite_record
+
+        return await read_sqlite_record(
+            self.db_path, capsule_id, tenant_id=tenant_id, max_content_bytes=max_content_bytes
+        )
 
     async def get_by_hash(self, hash_value: str) -> Capsule | None:
         """
