@@ -717,7 +717,7 @@ class TestSealVerifyDilithiumMocked:
         with tempfile.TemporaryDirectory() as tmpdir:
             seal = Seal(key_path=Path(tmpdir) / "key", enable_pq=True)
             seal._pq_secret_key = b"sk"
-            seal._pq_public_key = b"pk"
+            seal._pq_public_key = b"p" * 1952
 
             mock_oqs = MagicMock()
             mock_verifier = MagicMock()
@@ -733,7 +733,7 @@ class TestSealVerifyDilithiumMocked:
         with tempfile.TemporaryDirectory() as tmpdir:
             seal = Seal(key_path=Path(tmpdir) / "key", enable_pq=True)
             seal._pq_secret_key = b"sk"
-            seal._pq_public_key = b"pk"
+            seal._pq_public_key = b"p" * 1952
 
             mock_oqs = MagicMock()
             mock_verifier = MagicMock()

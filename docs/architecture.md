@@ -1,7 +1,8 @@
 ---
 title: "Capsule Architecture"
 description: "Complete technical architecture of Capsule: the 6-section record model, cryptographic sealing, hash chain integrity, and storage backends."
-date_modified: "2026-11-04"
+date_modified: "2026-11-05"
+related: ["security.md", "../spec/README.md"]
 ai_context: |
   Full architecture of the Capsule system. Covers the 6-section Capsule model
   (Trigger, Context, Reasoning, Authority, Execution, Outcome), two-tier
@@ -257,11 +258,18 @@ The keyring (`keyring.json`) stores the epoch history:
 
 **Backward-compatible verification:** `Seal.verify()` uses the capsule's `signed_by` fingerprint to look up the correct epoch's public key from the keyring. Capsules signed with old keys verify after rotation without manual key management.
 
-**Migration:** The first time the `Seal` or CLI encounters an existing key file without a keyring, it creates `keyring.json` with epoch 0 for the existing key. No manual migration required.
+**Migration:** Signing or explicit key management creates `keyring.json` with epoch
+0 for an existing legacy key. Verification reads existing material and defers
+migration. `verify_with_keys_detailed` accepts an independently trusted Ed25519 and
+ML-DSA-65 public-key pair, requires both signatures, and accesses no key files.
+The application authenticates the producer and checks current authority separately.
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:253-275 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:490-516 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:694-731 -->
 
 ---
 
-## Hash Chain
+## Hash chain
 
 <!-- VERIFIED: reference/python/src/qp_capsule/chain.py:42-145 -->
 

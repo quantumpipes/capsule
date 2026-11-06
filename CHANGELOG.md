@@ -9,6 +9,22 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- Verification preserves key custody. Missing verification keys return failure;
+  verification no longer provisions keys or migrates a legacy keyring. Local
+  ML-DSA-65 verification uses the public key alone, and signing refuses to replace
+  a surviving half of a partially restored post-quantum key pair.
+- ML-DSA-65 verification rejects malformed public-key lengths before the native
+  binding can pad a short buffer. The verifier releases native resources on every
+  exit after construction.
+
+### Added
+
+- `Seal.verify_with_keys_detailed` verifies both Ed25519 and ML-DSA-65 signatures
+  against an explicitly trusted public-key pair, with no custody-file access.
+  Applications remain responsible for key trust, producer roles and current authority.
+
 ---
 
 ## [1.5.10] - 2026-11-05

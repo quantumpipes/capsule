@@ -158,8 +158,7 @@ class Keyring:
         version = data.get("version")
         if version != self.KEYRING_VERSION:
             raise KeyringError(
-                f"Unsupported keyring version: {version} "
-                f"(expected {self.KEYRING_VERSION})"
+                f"Unsupported keyring version: {version} (expected {self.KEYRING_VERSION})"
             )
 
         self._version = data["version"]
@@ -233,6 +232,9 @@ class Keyring:
         16-char hex prefix used by pre-keyring capsules.
         """
         self._ensure_loaded()
+        return self._lookup_loaded(fingerprint)
+
+    def _lookup_loaded(self, fingerprint: str) -> Epoch | None:
         for epoch in self._epochs:
             if epoch.fingerprint == fingerprint:
                 return epoch
@@ -244,6 +246,32 @@ class Keyring:
     def lookup_public_key(self, fingerprint: str) -> str | None:
         """Look up a public key hex string by fingerprint."""
         epoch = self.lookup(fingerprint)
+        return epoch.public_key_hex if epoch else None
+
+    def lookup_public_key_readonly(self, fingerprint: str) -> str | None:
+        """Resolve existing public evidence without migrating or writing a keyring.
+
+        Args:
+            fingerprint: Current or legacy signer lookup hint.
+        Returns:
+            The existing public key, or None when no keyring or matching epoch exists.
+        Raises:
+            KeyringError: An existing keyring cannot be read or validated.
+
+        Verification must not invoke legacy migration: a read-only verifier may
+        have no authority to create or replace lifecycle records. Signing and
+        explicit provisioning retain the ordinary load/migration behavior.
+        """
+        if not self._loaded:
+            try:
+                self._keyring_path.stat()
+            except FileNotFoundError:
+                return None
+            except OSError as exc:
+                raise KeyringError("Cannot inspect verification keyring") from exc
+            self._load_from_file()
+            self._loaded = True
+        epoch = self._lookup_loaded(fingerprint)
         return epoch.public_key_hex if epoch else None
 
     def rotate(self) -> Epoch:

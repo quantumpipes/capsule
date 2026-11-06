@@ -1,8 +1,9 @@
 ---
 title: "Security Evaluation Guide"
 description: "Security evaluation guide for CISOs and security teams assessing Capsule for organizational adoption. Covers cryptographic architecture, key management, tamper evidence, attack surface, and deployment."
-date_modified: "2026-03-09"
+date_modified: "2026-11-05"
 classification: "Public"
+related: ["architecture.md", "../spec/README.md"]
 ai_context: |
   CISO-targeted security evaluation of the Capsule package. Covers two-tier
   crypto (SHA3-256 + Ed25519 + optional ML-DSA-65), key management (file-based,
@@ -45,7 +46,7 @@ Capsule is a cryptographic audit record for AI operations. Every AI action produ
 | Post-quantum signature | ML-DSA-65 | FIPS 204 | Quantum-resistant protection | NIST Level 3 (~AES-192); finalized August 2024 |
 | Temporal integrity | Hash chain | CPS v1.0 | Ordering and completeness | No consensus mechanism or distributed ledger required |
 
-### Two-Tier Model
+### Two-tier model
 
 - **Tier 1 (default):** SHA3-256 + Ed25519. Available on all platforms via PyNaCl. No additional dependencies.
 - **Tier 2 (with `[pq]`):** Everything in Tier 1, plus ML-DSA-65 dual signatures. Requires `liboqs-python`.
@@ -86,7 +87,7 @@ Ed25519 is always required. ML-DSA-65 is additive, never a replacement. If one a
 
 ### Generation
 
-- Keys are generated automatically on first use using cryptographically secure random sources
+- Signing provisions missing keys using cryptographically secure random sources. Verification reads existing material and leaves custody files unchanged.
 - File creation uses `os.umask(0o077)` before writing to prevent race conditions between creation and permission setting
 - Permissions are enforced with both umask (at creation) and explicit `chmod` (belt and suspenders)
 - No external key management service is required for basic operation
@@ -111,7 +112,32 @@ Rotation protocol:
 
 **Backward compatibility:** After rotation, Capsules signed with previous keys continue to verify. The keyring retains all retired epochs' public keys. `Seal.verify()` uses the capsule's `signed_by` fingerprint to look up the correct epoch's public key automatically.
 
-**Migration:** Existing installations without a keyring file are migrated seamlessly. On first use, the Seal or CLI creates `keyring.json` with epoch 0 for the existing key. No manual intervention required.
+**Migration:** Signing and explicit key-management operations create `keyring.json` with epoch 0 for an existing legacy key. Verification defers this migration and can still verify against the legacy seed or an existing public keyring.
+<!-- VERIFIED: reference/python/src/qp_capsule/keyring.py:253-275 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:490-516 -->
+
+### Verification with trusted public keys
+
+Use `Seal.verify_with_keys_detailed(capsule, ed25519_public_hex, mldsa65_public_hex)`
+when your verifier receives a trusted public-key pair. It requires both signatures
+over the same content hash, checks the exact ML-DSA-65 public-key length before
+native verification, and accesses neither custody files nor private keys. A missing
+post-quantum runtime or signature returns a failed result.
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:586-625 -->
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:694-731 -->
+
+Your application authenticates the keys and the producer's permitted role. The
+`signed_by` and `signed_at` envelope fields supply hints; they do not establish
+producer authority or current permission. Successful verification establishes
+signature validity, not permission to execute an action.
+
+Local post-quantum verification needs only `key.ml.pub`. If a restore leaves only
+one half of the post-quantum pair, verification preserves it and signing refuses
+to replace it. Restore the complete pair before signing again. This safeguard
+covers partial restores; concurrent initial key provisioning remains a separate
+key-management concern.
+<!-- VERIFIED: reference/python/src/qp_capsule/seal.py:266-275 -->
+<!-- VERIFIED: reference/python/tests/test_verification_readonly.py:100-227 -->
 
 **Automated rotation:** Schedule `capsule keys rotate` via cron for periodic rotation (e.g., every 90 days).
 

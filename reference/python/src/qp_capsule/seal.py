@@ -48,6 +48,8 @@ from qp_capsule.capsule import attach_stored_document, content_for_hash
 from qp_capsule.exceptions import SealError
 from qp_capsule.paths import default_key_path
 
+_ML_DSA_65_PUBLIC_KEY_BYTES = 1952
+
 if TYPE_CHECKING:
     from qp_capsule.capsule import Capsule
     from qp_capsule.keyring import Keyring
@@ -105,7 +107,7 @@ def _try_hex_bytes(
     """
     try:
         raw = bytes.fromhex(value)
-    except ValueError:
+    except (TypeError, ValueError):
         return (
             b"",
             SealVerificationResult(
@@ -262,7 +264,13 @@ class Seal:
             )
 
         try:
-            if pq_secret_path.exists() and pq_public_path.exists():
+            secret_exists = pq_secret_path.exists()
+            public_exists = pq_public_path.exists()
+            if secret_exists != public_exists:
+                raise SealError(
+                    "Incomplete post-quantum key pair; restore both files before signing"
+                )
+            if secret_exists:
                 self._pq_secret_key = pq_secret_path.read_bytes()
                 self._pq_public_key = pq_public_path.read_bytes()
             else:
@@ -291,9 +299,7 @@ class Seal:
         except SealError:
             raise
         except Exception as e:
-            raise SealError(
-                f"Failed to load/generate PQ keys: {type(e).__name__}"
-            ) from e
+            raise SealError(f"Failed to load/generate PQ keys: {type(e).__name__}") from e
 
     def get_public_key(self) -> str:
         """
@@ -379,9 +385,7 @@ class Seal:
         except SealError:
             raise
         except Exception as e:
-            raise SealError(
-                f"Failed to seal Capsule: {type(e).__name__}"
-            ) from e
+            raise SealError(f"Failed to seal Capsule: {type(e).__name__}") from e
 
     def _sign_dilithium(self, hash_value: str) -> str | None:
         """
@@ -440,6 +444,11 @@ class Seal:
 
         Returns:
             SealVerificationResult with a machine-readable SealVerifyCode.
+
+        Verification reads existing key material only. Missing keys fail without
+        generation, registration or legacy-keyring migration. The legacy local
+        fallback derives an Ed25519 public key from the existing private seed;
+        use verify_with_keys_detailed for verification without private-key access.
         """
         if require_pq:
             verify_pq = True
@@ -473,12 +482,14 @@ class Seal:
         try:
             resolve_key: VerifyKey | None = None
             if self._keyring is not None and capsule.signed_by:
-                pub_hex = self._keyring.lookup_public_key(capsule.signed_by)
+                pub_hex = self._keyring.lookup_public_key_readonly(capsule.signed_by)
                 if pub_hex is not None:
                     resolve_key = VerifyKey(bytes.fromhex(pub_hex))
 
             if resolve_key is None:
-                _, resolve_key = self._ensure_keys()
+                if self._verify_key is None:
+                    self._verify_key = SigningKey(self.key_path.read_bytes()).verify_key
+                resolve_key = self._verify_key
 
             resolve_key.verify(
                 capsule.hash.encode("utf-8"),
@@ -490,11 +501,11 @@ class Seal:
                 SealVerifyCode.INVALID_SIGNATURE,
                 "Ed25519 signature verification failed",
             )
-        except Exception as e:
+        except Exception:
             return SealVerificationResult(
                 False,
                 SealVerifyCode.INVALID_SIGNATURE,
-                f"Ed25519 verification error: {e!s}",
+                "Ed25519 verification error",
             )
 
         # Fail-closed post-quantum mode: the caller demands a genuine ML-DSA-65
@@ -570,17 +581,18 @@ class Seal:
         Returns:
             True if seal is valid, False otherwise
         """
-        return self.verify_detailed(
-            capsule, verify_pq=verify_pq, require_pq=require_pq
-        ).ok
+        return self.verify_detailed(capsule, verify_pq=verify_pq, require_pq=require_pq).ok
 
-    def _verify_dilithium(self, hash_value: str, signature_hex: str) -> bool:
+    def _verify_dilithium(
+        self, hash_value: str, signature_hex: str, *, public_key: bytes | None = None
+    ) -> bool:
         """
         Verify ML-DSA-65 signature using stored public key.
 
         Args:
             hash_value: The hash that was signed
             signature_hex: Hex-encoded ML-DSA-65 signature
+            public_key: Explicit trusted public bytes, or existing local public material.
 
         Returns:
             True if signature is valid, False otherwise
@@ -589,14 +601,23 @@ class Seal:
             return False
 
         try:
-            _, public_key = self._ensure_pq_keys()
+            if public_key is None:
+                public_key = self._pq_public_key
+                if public_key is None:
+                    public_key = (self.key_path.parent / "key.ml.pub").read_bytes()
+                    self._pq_public_key = public_key
+            # The native binding pads short buffers. Reject corrupt/truncated
+            # material before that normalization can change the supplied pin.
+            if len(public_key) != _ML_DSA_65_PUBLIC_KEY_BYTES:
+                return False
             verifier = _oqs_module.Signature("ML-DSA-65")
-
-            signature_bytes = bytes.fromhex(signature_hex)
-            message_bytes = hash_value.encode("utf-8")
-
-            is_valid: bool = verifier.verify(message_bytes, signature_bytes, public_key)
-            return is_valid
+            try:
+                signature_bytes = bytes.fromhex(signature_hex)
+                message_bytes = hash_value.encode("utf-8")
+                is_valid: bool = verifier.verify(message_bytes, signature_bytes, public_key)
+                return is_valid
+            finally:
+                verifier.free()
         except Exception:
             return False
 
@@ -647,11 +668,11 @@ class Seal:
                 SealVerifyCode.INVALID_SIGNATURE,
                 "Ed25519 signature verification failed",
             )
-        except Exception as e:
+        except Exception:
             return SealVerificationResult(
                 False,
                 SealVerifyCode.INVALID_SIGNATURE,
-                f"Ed25519 verification error: {e!s}",
+                "Ed25519 verification error",
             )
 
         return SealVerificationResult(True, SealVerifyCode.OK, "")
@@ -670,6 +691,43 @@ class Seal:
             True if seal is valid, False otherwise
         """
         return self.verify_with_key_detailed(capsule, public_key_hex).ok
+
+    def verify_with_keys_detailed(
+        self, capsule: Capsule, ed25519_public_hex: str, mldsa65_public_hex: str
+    ) -> SealVerificationResult:
+        """Require both signatures against an explicitly trusted public-key pair.
+
+        Args:
+            capsule: Exact signed content and envelope to verify.
+            ed25519_public_hex: Host-pinned Ed25519 public key.
+            mldsa65_public_hex: Host-pinned ML-DSA-65 public key.
+        Returns:
+            A structured result requiring both signatures over the same content
+            hash. No key files, keyring, private keys or key generation are used.
+
+        The caller authenticates the public keys and their permitted producer role.
+        Capsule-supplied keys, signed_by and signed_at establish no trust. Signing
+        configuration cannot downgrade this explicit hybrid verification method.
+        """
+        classical = self.verify_with_key_detailed(capsule, ed25519_public_hex)
+        if not classical.ok:
+            return classical
+        if _oqs_module is None:
+            return SealVerificationResult(
+                False, SealVerifyCode.PQ_LIBRARY_UNAVAILABLE, "post-quantum verifier unavailable"
+            )
+        if not capsule.signature_pq:
+            return SealVerificationResult(
+                False, SealVerifyCode.MISSING_PQ_SIGNATURE, "capsule has no post-quantum signature"
+            )
+        public_key, error = _try_hex_bytes(mldsa65_public_hex, _ML_DSA_65_PUBLIC_KEY_BYTES)
+        if error is not None:
+            return error
+        if not self._verify_dilithium(capsule.hash, capsule.signature_pq, public_key=public_key):
+            return SealVerificationResult(
+                False, SealVerifyCode.PQ_VERIFICATION_FAILED, "post-quantum verification failed"
+            )
+        return SealVerificationResult(True, SealVerifyCode.OK, "")
 
 
 def compute_hash(data: dict[str, Any]) -> str:
