@@ -37,7 +37,7 @@
     "@noble/ed25519": "^3.0.0"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.0.0",
+    "@vitest/coverage-v8": "^5.1.0",
     "typescript": "^7.0.2",
     "vitest": "^4.0.0"
   }
