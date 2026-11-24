@@ -10,6 +10,7 @@ import json
 import tempfile
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from nacl.signing import SigningKey
@@ -889,4 +890,170 @@ class TestVerifyWithExplicitPublicKey:
         args = _build_parser().parse_args(
             ["verify", str(path), "--pubkey", "ab", "--pubkey-file", str(path)]
         )
+        assert cmd_verify(args) == 2
+
+
+class TestVerifyHybridExplicitKeys:
+    """Offline verification of BOTH signatures with only the two public keys.
+
+    The Ed25519-only path proves the classical half. A regulator reading the
+    chain after 2035 needs the ML-DSA-65 half, so the explicit hybrid check
+    requires both signatures over the same content hash and never downgrades.
+    """
+
+    @pytest.fixture
+    def pq_seal(self, temp_dir):
+        pytest.importorskip("oqs")
+        return Seal(key_path=temp_dir / "signer" / "key", enable_pq=True)
+
+    # ML-DSA keys live beside key_path as key.ml, one pair per DIRECTORY, so each
+    # seal in these tests gets its own directory or two seals silently share a pair.
+
+    @staticmethod
+    def _keys(s: Seal) -> tuple[str, str]:
+        return s.get_public_key(), s._ensure_pq_keys()[1].hex()
+
+    def test_hybrid_verifies_with_only_public_keys(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 3)
+        ed, mldsa = self._keys(pq_seal)
+        verifier = Seal(key_path=temp_dir / "unrelated", enable_pq=False)
+        r = verify_chain(
+            chain, level="signatures", seal=verifier, public_key=ed, pq_public_key=mldsa
+        )
+        assert r.valid is True
+        assert r.hybrid is True
+        assert r.capsules_verified == 3
+        assert r.to_dict()["hybrid"] is True
+
+    def test_wrong_mldsa_key_fails(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 2)
+        ed, _ = self._keys(pq_seal)
+        other = Seal(key_path=temp_dir / "other" / "key", enable_pq=True)
+        _, wrong = self._keys(other)
+        r = verify_chain(chain, level="signatures", seal=other, public_key=ed, pq_public_key=wrong)
+        assert r.valid is False
+        assert "post-quantum verification failed" in r.errors[0].error
+
+    def test_forged_pq_signature_fails_even_with_valid_ed25519(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 2)
+        ed, mldsa = self._keys(pq_seal)
+        sig = bytearray.fromhex(chain[1].signature_pq)
+        sig[10] ^= 0x01
+        chain[1].signature_pq = sig.hex()
+        r = verify_chain(
+            chain, level="signatures", seal=Seal(key_path=temp_dir / "v"),
+            public_key=ed, pq_public_key=mldsa,
+        )
+        assert r.valid is False
+        assert r.errors[0].sequence == 1
+
+    def test_missing_pq_signature_fails_never_downgrades(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 2)
+        ed, mldsa = self._keys(pq_seal)
+        chain[0].signature_pq = ""
+        r = verify_chain(
+            chain, level="signatures", seal=Seal(key_path=temp_dir / "v"),
+            public_key=ed, pq_public_key=mldsa,
+        )
+        assert r.valid is False
+        assert r.errors[0].sequence == 0
+        assert "no post-quantum signature" in r.errors[0].error
+
+    def test_without_pq_library_hybrid_fails_closed(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 1)
+        ed, mldsa = self._keys(pq_seal)
+        with patch("qp_capsule.seal._oqs_module", None):
+            r = verify_chain(
+                chain, level="signatures", seal=Seal(key_path=temp_dir / "v", enable_pq=False),
+                public_key=ed, pq_public_key=mldsa,
+            )
+        assert r.valid is False
+        assert "post-quantum verifier unavailable" in r.errors[0].error
+
+    def test_pq_key_without_ed25519_key_is_refused(self, seal):
+        chain = _make_sealed_chain(seal, 1)
+        with pytest.raises(ValueError, match="requires public_key"):
+            verify_chain(chain, level="signatures", seal=seal, pq_public_key="00")
+
+    def test_ed25519_only_result_is_not_hybrid(self, seal, temp_dir):
+        chain = _make_sealed_chain(seal, 1)
+        r = verify_chain(
+            chain, level="signatures", seal=Seal(key_path=temp_dir / "v"),
+            public_key=seal.get_public_key(),
+        )
+        assert r.valid is True
+        assert r.hybrid is False
+
+    def test_cli_hybrid_flags_pass(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 2)
+        ed, mldsa = self._keys(pq_seal)
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey", ed, "--pq-pubkey", mldsa, "--quiet"]
+        )
+        assert cmd_verify(args) == 0
+
+    def test_cli_hybrid_key_files_pass(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 2)
+        ed, mldsa = self._keys(pq_seal)
+        (temp_dir / "ed.pub").write_text(ed + "\n", encoding="utf-8")
+        (temp_dir / "ml.pub").write_text(mldsa + "\n", encoding="utf-8")
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args([
+            "verify", str(path), "--pubkey-file", str(temp_dir / "ed.pub"),
+            "--pq-pubkey-file", str(temp_dir / "ml.pub"), "--quiet",
+        ])
+        assert cmd_verify(args) == 0
+
+    def test_cli_hybrid_wrong_pq_key_exit_1(self, pq_seal, temp_dir):
+        chain = _make_sealed_chain(pq_seal, 2)
+        ed, _ = self._keys(pq_seal)
+        _, wrong = self._keys(Seal(key_path=temp_dir / "other" / "key", enable_pq=True))
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey", ed, "--pq-pubkey", wrong, "--quiet"]
+        )
+        assert cmd_verify(args) == 1
+
+    def test_cli_hybrid_json_reports_hybrid(self, pq_seal, temp_dir, capsys):
+        chain = _make_sealed_chain(pq_seal, 1)
+        ed, mldsa = self._keys(pq_seal)
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey", ed, "--pq-pubkey", mldsa, "--json"]
+        )
+        assert cmd_verify(args) == 0
+        out = json.loads(capsys.readouterr().out)
+        assert out["hybrid"] is True and out["valid"] is True
+
+    def test_cli_hybrid_text_names_both_algorithms(self, pq_seal, temp_dir, capsys):
+        chain = _make_sealed_chain(pq_seal, 1)
+        ed, mldsa = self._keys(pq_seal)
+        path = _write_chain_json(chain, temp_dir / "chain.json")
+        args = _build_parser().parse_args(
+            ["verify", str(path), "--pubkey", ed, "--pq-pubkey", mldsa]
+        )
+        assert cmd_verify(args) == 0
+        assert "Ed25519 + ML-DSA-65" in capsys.readouterr().out
+
+    def test_cli_pq_key_alone_exit_2(self, seal, temp_dir, capsys):
+        path = _write_chain_json(_make_sealed_chain(seal, 1), temp_dir / "chain.json")
+        args = _build_parser().parse_args(["verify", str(path), "--pq-pubkey", "00", "--quiet"])
+        assert cmd_verify(args) == 2
+        assert "needs --pubkey" in capsys.readouterr().err
+
+    def test_cli_both_pq_key_sources_exit_2(self, seal, temp_dir):
+        path = _write_chain_json(_make_sealed_chain(seal, 1), temp_dir / "chain.json")
+        args = _build_parser().parse_args([
+            "verify", str(path), "--pubkey", seal.get_public_key(),
+            "--pq-pubkey", "00", "--pq-pubkey-file", str(temp_dir / "x"), "--quiet",
+        ])
+        assert cmd_verify(args) == 2
+
+    def test_cli_unreadable_pq_key_file_exit_2(self, seal, temp_dir):
+        path = _write_chain_json(_make_sealed_chain(seal, 1), temp_dir / "chain.json")
+        args = _build_parser().parse_args([
+            "verify", str(path), "--pubkey", seal.get_public_key(),
+            "--pq-pubkey-file", str(temp_dir / "missing.pub"), "--quiet",
+        ])
         assert cmd_verify(args) == 2

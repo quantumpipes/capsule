@@ -9,6 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- `capsule verify --pq-pubkey <hex>` (and `--pq-pubkey-file`) checks each capsule's ML-DSA-65 signature offline, alongside the Ed25519 check that `--pubkey` already ran. Both signatures must hold over the same content hash, through `Seal.verify_with_keys_detailed`. A capsule with no post-quantum signature fails, and so does a host without the post-quantum library: an explicit hybrid check never falls back to Ed25519 alone. `verify_chain()` takes the matching `pq_public_key` argument. `VerifyResult` gains a `hybrid` field, which also appears in `--json` output. `--pq-pubkey` without `--pubkey` exits 2.
+
 ---
 
 ## [1.6.0] - 2026-11-05

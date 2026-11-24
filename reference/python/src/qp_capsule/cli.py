@@ -13,6 +13,7 @@ Usage::
     capsule verify --full chain.json              # + content hashes
     capsule verify --signatures --db capsules.db  # + Ed25519 sigs (keyring)
     capsule verify --pubkey <hex> chain.json      # + Ed25519 sigs, offline, only the public key
+    capsule verify --pubkey <hex> --pq-pubkey <hex> chain.json  # + ML-DSA-65 too (hybrid)
     capsule inspect --db capsules.db --seq 2      # Show capsule #2
     capsule keys info                             # Key metadata
     capsule keys rotate                           # Rotate to new epoch
@@ -116,11 +117,13 @@ class VerifyResult:
     capsules_verified: int
     total_capsules: int
     errors: list[VerifyError] = field(default_factory=list)
+    hybrid: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "valid": self.valid,
             "level": self.level,
+            "hybrid": self.hybrid,
             "capsules_verified": self.capsules_verified,
             "total_capsules": self.total_capsules,
             "errors": [e.to_dict() for e in self.errors],
@@ -185,6 +188,7 @@ def verify_chain(
     level: str = "structural",
     seal: Seal | None = None,
     public_key: str | None = None,
+    pq_public_key: str | None = None,
 ) -> VerifyResult:
     """
     Verify a chain of capsules.
@@ -199,12 +203,38 @@ def verify_chain(
     explicit key via :meth:`Seal.verify_with_key_detailed`. This is the offline
     third-party path: anyone holding the signer's public key can verify the chain
     with no keyring, no database, and no access to the signing key.
+
+    When ``pq_public_key`` (a hex-encoded ML-DSA-65 public key) is supplied as
+    well, each capsule must carry BOTH signatures over the same content hash, via
+    :meth:`Seal.verify_with_keys_detailed`. A capsule with no post-quantum
+    signature, or a host without the post-quantum library, fails rather than
+    passing on Ed25519 alone: an explicit hybrid check never downgrades.
+
+    Args:
+        capsules: The chain, ordered by sequence.
+        level: ``structural``, ``full`` or ``signatures``.
+        seal: The verifier. Required for signature checks.
+        public_key: Hex Ed25519 public key for offline verification.
+        pq_public_key: Hex ML-DSA-65 public key. Requires ``public_key``.
+
+    Returns:
+        A VerifyResult naming the first failing sequence, if any.
+
+    Raises:
+        ValueError: ``pq_public_key`` was given without ``public_key``.
     """
+    if pq_public_key is not None and public_key is None:
+        raise ValueError(
+            "pq_public_key requires public_key: hybrid verification checks both signatures"
+        )
+    hybrid = pq_public_key is not None
     total = len(capsules)
     errors: list[VerifyError] = []
 
     if not capsules:
-        return VerifyResult(valid=True, level=level, capsules_verified=0, total_capsules=0)
+        return VerifyResult(
+            valid=True, level=level, capsules_verified=0, total_capsules=0, hybrid=hybrid
+        )
 
     do_content = level in ("full", "signatures")
     do_sigs = level == "signatures"
@@ -237,7 +267,10 @@ def verify_chain(
 
         if do_sigs and seal is not None:
             if public_key is not None:
-                res = seal.verify_with_key_detailed(capsule, public_key)
+                if pq_public_key is not None:
+                    res = seal.verify_with_keys_detailed(capsule, public_key, pq_public_key)
+                else:
+                    res = seal.verify_with_key_detailed(capsule, public_key)
                 if not res.ok:
                     detail = res.message or str(res.code)
                     msg = f"Signature verification failed at sequence {i}: {detail}"
@@ -254,6 +287,7 @@ def verify_chain(
         capsules_verified=total if not errors else errors[0].sequence,
         total_capsules=total,
         errors=errors,
+        hybrid=hybrid,
     )
 
 
@@ -275,6 +309,8 @@ def _print_verify_result(result: VerifyResult, capsules: list[Capsule]) -> None:
     print(_bold("Capsule Chain Verification"))
     print("=" * 50)
     desc = _LEVEL_DESCRIPTIONS.get(result.level, "")
+    if result.hybrid:
+        desc = "full + Ed25519 + ML-DSA-65 verification"
     print(f"  Level: {result.level}" + (f" ({desc})" if desc else ""))
     print()
 
@@ -408,6 +444,27 @@ def cmd_verify(args: argparse.Namespace) -> int:
     elif pubkey_arg:
         public_key = pubkey_arg.strip()
 
+    pq_public_key = None
+    pq_arg = getattr(args, "pq_pubkey", None)
+    pq_file = getattr(args, "pq_pubkey_file", None)
+    if pq_arg and pq_file:
+        print("Error: specify only one of --pq-pubkey / --pq-pubkey-file", file=sys.stderr)
+        return 2
+    if pq_file:
+        try:
+            pq_public_key = Path(pq_file).read_text("utf-8").strip()
+        except OSError as e:
+            print(f"Error reading --pq-pubkey-file: {e}", file=sys.stderr)
+            return 2
+    elif pq_arg:
+        pq_public_key = pq_arg.strip()
+    if pq_public_key is not None and public_key is None:
+        print(
+            "Error: --pq-pubkey needs --pubkey too; hybrid verification checks both signatures",
+            file=sys.stderr,
+        )
+        return 2
+
     level = args.level
     seal = None
     if public_key is not None:
@@ -421,7 +478,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
         keyring = Keyring()
         seal = Seal(keyring=keyring)
 
-    result = verify_chain(capsules, level=level, seal=seal, public_key=public_key)
+    result = verify_chain(
+        capsules, level=level, seal=seal, public_key=public_key, pq_public_key=pq_public_key
+    )
 
     if getattr(args, "json_output", False):
         print(json.dumps(result.to_dict(), indent=2))
@@ -624,6 +683,16 @@ def _build_parser() -> argparse.ArgumentParser:
     vp.add_argument(
         "--pubkey-file", metavar="PATH", default=None, dest="pubkey_file",
         help="Read the explicit Ed25519 public key (hex) from a file. Implies --signatures.",
+    )
+    vp.add_argument(
+        "--pq-pubkey", metavar="HEX", default=None, dest="pq_pubkey",
+        help="Also require each capsule's ML-DSA-65 signature against this explicit "
+        "public key (hex). Needs --pubkey or --pubkey-file. A capsule without a "
+        "post-quantum signature fails.",
+    )
+    vp.add_argument(
+        "--pq-pubkey-file", metavar="PATH", default=None, dest="pq_pubkey_file",
+        help="Read the explicit ML-DSA-65 public key (hex) from a file.",
     )
     vp.add_argument(
         "--json", action="store_true", dest="json_output",
